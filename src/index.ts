@@ -1,3 +1,4 @@
+export * from './brand-logo';
 export * from './components/login/LoginBrandIntro';
 export * from './components/login/LoginChangelogTimeline';
 export * from './components/login/LoginScreen';

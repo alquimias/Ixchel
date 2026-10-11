@@ -12,6 +12,7 @@ export * from './components/shared/EmptyState';
 export * from './components/shared/EntityFormDialogShell';
 export * from './components/shared/ErrorState';
 export * from './components/shared/FormShell';
+export * from './components/shared/PageBreadcrumbs';
 export * from './components/shared/PageHeader';
 export * from './components/shared/PageTransitionLoader';
 export * from './components/shared/PeriodoFilter';

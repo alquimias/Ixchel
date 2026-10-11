@@ -5,5 +5,5 @@
     "ignoreDeprecations": "6.0",
     "types": ["vitest/globals"]
   },
-  "include": ["src", "vitest.config.ts"]
+  "include": ["src", "vitest.config.ts", ".storybook"]
 }

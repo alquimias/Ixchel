@@ -1,3 +1,6 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from 'eslint-plugin-storybook';
+
 import { react } from '@erp/eslint-config';
 
 export default [
@@ -13,4 +16,5 @@ export default [
       'src/lib/get-strict-context.tsx',
     ],
   },
+  ...storybook.configs['flat/recommended'],
 ];

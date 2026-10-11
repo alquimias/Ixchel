@@ -1,6 +1,10 @@
 'use client';
 
 import {
+  createContext,
+  useContext,
+  useId,
+  useMemo,
   useRef,
   useState,
   useCallback,
@@ -30,16 +34,38 @@ export interface InputGroupProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
 }
 
+type InputBeamContextValue = {
+  activeId: string | null;
+  activate: (id: string) => void;
+  deactivate: (id: string) => void;
+};
+
+const InputBeamContext = createContext<InputBeamContextValue | null>(null);
+
 const InputGroup = forwardRef<HTMLDivElement, InputGroupProps>(
   ({ children, className, ...props }, ref) => {
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const activate = useCallback((id: string) => {
+      setActiveId(id);
+    }, []);
+    const deactivate = useCallback((id: string) => {
+      setActiveId((current) => (current === id ? null : current));
+    }, []);
+    const beamContext = useMemo(
+      () => ({ activeId, activate, deactivate }),
+      [activeId, activate, deactivate],
+    );
+
     return (
-      <div
-        ref={ref}
-        className={cn('relative flex flex-col gap-3 w-full max-w-full', className)}
-        {...props}
-      >
-        {children}
-      </div>
+      <InputBeamContext.Provider value={beamContext}>
+        <div
+          ref={ref}
+          className={cn('relative flex flex-col gap-3 w-full max-w-full', className)}
+          {...props}
+        >
+          {children}
+        </div>
+      </InputBeamContext.Provider>
     );
   },
 );
@@ -208,10 +234,29 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
     ref,
   ) => {
     const inputRef = useRef<HTMLInputElement | null>(null);
+    const generatedId = useId();
+    const fieldId = id ?? generatedId;
+    const beam = useContext(InputBeamContext);
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const prefersReducedMotion = usePrefersReducedMotion();
     const shape = useShape();
+
+    const claimBeam = useCallback(() => {
+      if (!borderBeam) return;
+      beam?.activate(fieldId);
+    }, [beam, borderBeam, fieldId]);
+
+    const releaseBeam = useCallback(() => {
+      if (!borderBeam) return;
+      beam?.deactivate(fieldId);
+    }, [beam, borderBeam, fieldId]);
+
+    const showBeam =
+      borderBeam &&
+      !prefersReducedMotion &&
+      !error &&
+      (beam ? beam.activeId === fieldId : isFocused);
 
     const labelActive = isFocused || isHovered;
     const { isError, isShaking } = useInputErrorShake(error);
@@ -229,17 +274,18 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onMouseDown={(e) => {
+          claimBeam();
           if (e.target === inputRef.current) return;
           e.preventDefault();
           inputRef.current?.focus();
         }}
         className={cn(
-          't-input flex items-center gap-2 px-3 py-2 ring-1 transition-all duration-80',
+          't-input flex items-center gap-2 px-3 py-2 transition-all duration-80',
           shape.input,
           isError && 'is-error',
           isShaking && 'is-shaking',
           bgClass,
-          ringClass,
+          borderBeam && !error ? 'ring-0' : cn('ring-1', ringClass),
         )}
       >
         {Icon && (
@@ -258,9 +304,13 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => {
+            setIsFocused(true);
+            claimBeam();
+          }}
           onBlur={(e) => {
             setIsFocused(false);
+            releaseBeam();
             onBlur?.(e);
           }}
           placeholder={resolvedPlaceholder}
@@ -272,21 +322,20 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
       </div>
     );
 
-    const inputControl =
-      borderBeam && !prefersReducedMotion && !error ? (
-        <BorderBeam
-          className="block w-full"
-          size="line"
-          theme="auto"
-          colorVariant="ocean"
-          strength={isFocused || isHovered ? 0.85 : 0.5}
-          duration={2.4}
-        >
-          {inputShell}
-        </BorderBeam>
-      ) : (
-        inputShell
-      );
+    const inputControl = showBeam ? (
+      <BorderBeam
+        className="block w-full"
+        size="line"
+        theme="auto"
+        colorVariant="ocean"
+        strength={0.85}
+        duration={2.4}
+      >
+        {inputShell}
+      </BorderBeam>
+    ) : (
+      inputShell
+    );
 
     return (
       <Field.Root

@@ -135,6 +135,7 @@ export function LoginScreen({
                 label="Contraseña"
                 icon={Lock}
                 type="password"
+                borderBeam
                 value={password}
                 onChange={(value) => {
                   setPassword(value);

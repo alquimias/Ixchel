@@ -1,0 +1,25 @@
+@keyframes t-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.t-skeleton {
+  background-image: linear-gradient(
+    100deg,
+    var(--muted) 35%,
+    color-mix(in oklab, var(--color-brand-soft) 16%, var(--muted)) 50%,
+    var(--muted) 65%
+  );
+  background-size: 200% 100%;
+  animation: t-skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-skeleton {
+    animation: none;
+  }
+}

@@ -1,0 +1,350 @@
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "./input-error-shake.css";
+@import "./digit-pop-in.css";
+@import "./reel-counter.css";
+@import "./text-stagger-reveal.css";
+@import "./skeleton-shimmer.css";
+
+@source "../";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-display:
+    'Plus Jakarta Sans',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  /* D-04 (UI-04): Inter ya se precarga en index.html pero nunca se usaba
+     como --font-sans real (el body seguia en system-ui). Se activa aqui;
+     el body ya no trae su propio font-family literal (ver regla body{}
+     mas abajo), asi que este es ahora el unico punto de verdad. */
+  --font-sans:
+    'Inter',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  --color-brand-black: #000807;
+  --color-brand-lavender: #A2A3BB;
+  --color-brand-soft: #9395D3;
+  --color-brand-peri: #B3B7EE;
+  --color-brand-ghost: #FBF9FF;
+  /* Paleta de avatares (D-Avatar): 7 tonos derivados de las 5 variables de
+     marca vía color-mix(), mismo criterio que --chart-1..5. Mode-invariant
+     a propósito -- igual que NIVEL_BADGE_STYLES, la identidad de color de
+     una persona no debería cambiar entre claro/oscuro. Los primeros 3 son
+     claros (van con texto --color-brand-black), los últimos 4 mezclan hacia
+     negro (van con texto --color-brand-ghost) -- ver AVATAR_PALETTE en
+     lib/avatarColor.ts, que ya trae el texto correcto emparejado.  */
+  --color-avatar-1: var(--color-brand-soft);
+  --color-avatar-2: var(--color-brand-peri);
+  --color-avatar-3: var(--color-brand-lavender);
+  --color-avatar-4: color-mix(in oklab, var(--color-brand-soft) 60%, var(--color-brand-peri) 40%);
+  --color-avatar-5: color-mix(in oklab, var(--color-brand-soft) 55%, var(--color-brand-black) 45%);
+  --color-avatar-6: color-mix(in oklab, var(--color-brand-peri) 55%, var(--color-brand-black) 45%);
+  --color-avatar-7: color-mix(in oklab, var(--color-brand-lavender) 55%, var(--color-brand-black) 45%);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-light: var(--destructive-light);
+  --color-destructive-text: var(--destructive-text);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-text: var(--info-text);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-text: var(--success-text);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-primary-text: var(--primary-text);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-surface-5: var(--surface-5);
+  --color-surface-6: var(--surface-6);
+  --color-surface-7: var(--surface-7);
+  --color-surface-8: var(--surface-8);
+  --shadow-surface-1: var(--shadow-1);
+  --shadow-surface-2: var(--shadow-2);
+  --shadow-surface-3: var(--shadow-3);
+  --shadow-surface-4: var(--shadow-4);
+  --shadow-surface-5: var(--shadow-5);
+  --shadow-surface-6: var(--shadow-6);
+  --shadow-surface-7: var(--shadow-7);
+  --shadow-surface-8: var(--shadow-8);
+  --color-dm-drop: var(--dm-drop);
+  --color-dm-ring-high: var(--dm-ring-high);
+  --color-dm-ring-mid: var(--dm-ring-mid);
+  --color-dm-ring-base: var(--dm-ring-base);
+  --color-dm-hi-peak: var(--dm-hi-peak);
+  --color-dm-hi-high: var(--dm-hi-high);
+  --color-dm-hi-mid: var(--dm-hi-mid);
+  --color-dm-hi-base: var(--dm-hi-base);
+  --shadow-8: var(--shadow-8);
+  --shadow-7: var(--shadow-7);
+  --shadow-6: var(--shadow-6);
+  --shadow-5: var(--shadow-5);
+  --shadow-4: var(--shadow-4);
+  --shadow-3: var(--shadow-3);
+  --shadow-2: var(--shadow-2);
+  --shadow-1: var(--shadow-1);
+  --color-shadow-color: var(--shadow-color);
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+  @keyframes spinner-move {
+  to {
+    stroke-dashoffset: -100;
+    }
+  }
+  @keyframes spinner-dash {
+  0%, 100% {
+    stroke-dasharray: 15 85;
+    }
+  50% {
+    stroke-dasharray: 40 60;
+    }
+  }
+}
+
+:root {
+  --background: var(--color-brand-ghost);
+  --foreground: var(--color-brand-black);
+  --card: #ffffff;
+  --card-foreground: var(--color-brand-black);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-brand-black);
+  --primary: var(--color-brand-soft);
+  --primary-foreground: var(--color-brand-ghost);
+  --secondary: var(--color-brand-peri);
+  --secondary-foreground: var(--color-brand-black);
+  --muted: #f3f2fa;
+  --muted-foreground: #5c5d6e;
+  --accent: #f0f1fa;
+  --accent-foreground: var(--color-brand-soft);
+  /* D-02 (UI-02): los semanticos ya no son los hex literales de Bootstrap 5
+     (#dc3545/#198754/#ffc107/#0dcaf0) — se mezclan con la paleta de marca
+     via color-mix() para conservar la lectura universal del color base
+     (rojo=error, verde=exito, ambar=alerta) con un tinte propio del ERP.
+     info se resuelve directo a brand-peri (mismo criterio ya usado por
+     --secondary/--secondary-foreground en este archivo) en vez de un cian
+     generico sin relacion con la marca. */
+  --destructive: color-mix(in oklab, #dc3545 88%, var(--color-brand-soft) 12%);
+  --destructive-light: color-mix(in oklab, var(--destructive) 18%, transparent);
+  --border: #e2e3ed;
+  /* D-Input: el borde de campos editables necesita más peso que el borde
+     "estructural" de tarjetas/tablas (--border) para que un input se lea
+     como editable de un vistazo, no solo por el placeholder gris. 85%
+     lavender/15% black da 3.31:1 contra --card blanco -- cruza el umbral
+     de 3:1 de WCAG 1.4.11 para límites de componentes no-texto. */
+  --input: color-mix(in oklab, var(--color-brand-lavender) 85%, var(--color-brand-black) 15%);
+  --ring: var(--color-brand-soft);
+  --success: color-mix(in oklab, #198754 88%, var(--color-brand-soft) 12%);
+  --success-foreground: #ffffff;
+  --warning: color-mix(in oklab, #ffc107 88%, var(--color-brand-soft) 12%);
+  --warning-foreground: var(--color-brand-black);
+  --info: var(--color-brand-peri);
+  --info-foreground: var(--color-brand-black);
+  /* D-32 (UI-32): destructive/success/warning/info/primary funcionan bien
+     como FONDO tintado (badges, StatCard) pero brand-soft es demasiado
+     claro para servir como texto/icono sobre ese mismo fondo — fallan
+     WCAG AA (auditoria de contraste, ver erp-design-system skill).
+     Mismo hue, oscurecido hacia brand-black solo para uso de texto/icono;
+     los fondos no cambian. warning no necesita variante: ya usa
+     warning-foreground (negro) como texto. */
+  --destructive-text: color-mix(in oklab, var(--destructive) 86%, var(--color-brand-black) 14%);
+  --success-text: color-mix(in oklab, var(--success) 87%, var(--color-brand-black) 13%);
+  --info-text: color-mix(in oklab, var(--info) 63%, var(--color-brand-black) 37%);
+  --primary-text: color-mix(in oklab, var(--primary) 73%, var(--color-brand-black) 27%);
+  /* D-03 (UI-03): antes escala de grises oklch sin croma; ahora una rampa
+     clara->oscura derivada de la familia peri/soft/lavender/black, para
+     que cualquier grafico se lea como parte del producto, no como
+     plantilla de admin panel. */
+  --chart-1: var(--color-brand-peri);
+  --chart-2: var(--color-brand-soft);
+  --chart-3: color-mix(in oklab, var(--color-brand-soft) 70%, var(--color-brand-black) 30%);
+  --chart-4: color-mix(in oklab, var(--color-brand-soft) 45%, var(--color-brand-black) 55%);
+  --chart-5: color-mix(in oklab, var(--color-brand-lavender) 40%, var(--color-brand-black) 60%);
+  --radius: 0.625rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--color-brand-black);
+  --sidebar-primary: var(--color-brand-soft);
+  --sidebar-primary-foreground: var(--color-brand-ghost);
+  --sidebar-accent: #f0f1fa;
+  --sidebar-accent-foreground: var(--color-brand-soft);
+  --sidebar-border: #e2e3ed;
+  --sidebar-ring: var(--color-brand-soft);
+  --surface-1: #FAFAFA;
+  --surface-2: #FCFCFC;
+  --surface-3: #FFFFFF;
+  --surface-4: #FFFFFF;
+  --surface-5: #FFFFFF;
+  --surface-6: #FFFFFF;
+  --surface-7: #FFFFFF;
+  --surface-8: #FFFFFF;
+  /* D-05 (UI-05): sombra tenida con brand-black en vez de negro neutro. */
+  --shadow-color: color-mix(in srgb, var(--color-brand-black) 6%, transparent);
+  --shadow-1: 0 0 0 1px var(--shadow-color);
+  --shadow-2: 0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color);
+  --shadow-3: 0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color), 0 3px 3px -1.5px var(--shadow-color);
+  --shadow-4: 0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color), 0 3px 3px -1.5px var(--shadow-color), 0 6px 6px -3px var(--shadow-color);
+  --shadow-5: 0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color), 0 3px 3px -1.5px var(--shadow-color), 0 6px 6px -3px var(--shadow-color), 0 12px 12px -6px var(--shadow-color);
+  --shadow-6: 0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color), 0 3px 3px -1.5px var(--shadow-color), 0 6px 6px -3px var(--shadow-color), 0 12px 12px -6px var(--shadow-color), 0 24px 24px -12px var(--shadow-color);
+  --shadow-7: 0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color), 0 3px 3px -1.5px var(--shadow-color), 0 6px 6px -3px var(--shadow-color), 0 12px 12px -6px var(--shadow-color), 0 24px 24px -12px var(--shadow-color), 0 48px 48px -24px var(--shadow-color);
+  --shadow-8: 0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color), 0 3px 3px -1.5px var(--shadow-color), 0 6px 6px -3px var(--shadow-color), 0 12px 12px -6px var(--shadow-color), 0 24px 24px -12px var(--shadow-color), 0 48px 48px -24px var(--shadow-color), 0 96px 96px -48px var(--shadow-color);
+  --hover: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --active: color-mix(in oklab, var(--foreground) 9%, transparent);
+  --focus-ring: var(--ring);
+}
+
+.dark {
+  --background: var(--color-brand-black);
+  --foreground: var(--color-brand-ghost);
+  --card: #0b0e14;
+  --card-foreground: var(--color-brand-ghost);
+  --popover: #0b0e14;
+  --popover-foreground: var(--color-brand-ghost);
+  --primary: var(--color-brand-soft);
+  --primary-foreground: var(--color-brand-black);
+  --secondary: #1a1c24;
+  --secondary-foreground: var(--color-brand-ghost);
+  --muted: #1a1c24;
+  --muted-foreground: var(--color-brand-lavender);
+  --accent: #1e1f2b;
+  --accent-foreground: var(--color-brand-peri);
+  /* Mismo criterio de D-02 (UI-02) para dark: se retiñe el oklch generico
+     anterior con brand-soft en vez de reemplazarlo por otro valor
+     arbitrario sin relacion con la marca; info pasa a brand-peri,
+     consistente con la resolucion de light. */
+  --destructive: color-mix(in oklch, oklch(0.704 0.191 22.216) 85%, var(--color-brand-soft) 15%);
+  --destructive-light: color-mix(in oklab, var(--destructive) 22%, transparent);
+  --success: color-mix(in oklch, oklch(0.596 0.145 163.225) 85%, var(--color-brand-soft) 15%);
+  --success-foreground: oklch(0.145 0 0);
+  --warning: color-mix(in oklch, oklch(0.86 0.15 85) 85%, var(--color-brand-soft) 15%);
+  --warning-foreground: oklch(0.145 0 0);
+  --info: var(--color-brand-peri);
+  --info-foreground: var(--color-brand-black);
+  /* D-32 (UI-32): en dark los tokens base ya cumplen AA como texto sobre su
+     propio fondo tintado (mas opaco que en light) -- solo success necesita
+     un aclarado minimo hacia brand-ghost. */
+  --destructive-text: var(--destructive);
+  --success-text: color-mix(in oklab, var(--success) 97%, var(--color-brand-ghost) 3%);
+  --info-text: var(--info);
+  --primary-text: var(--primary);
+  --border: color-mix(in srgb, var(--color-brand-lavender) 15%, transparent);
+  /* D-Input: mismo criterio que en claro -- el borde de un campo editable
+     lleva más opacidad que el borde estructural de --border. */
+  --input: color-mix(in srgb, var(--color-brand-lavender) 35%, transparent);
+  --ring: var(--color-brand-soft);
+  /* D-03 (UI-03): mismo criterio que light, en rampa inversa (clara sobre
+     fondo oscuro) para mantener legibilidad de series. */
+  --chart-1: var(--color-brand-peri);
+  --chart-2: var(--color-brand-soft);
+  --chart-3: var(--color-brand-lavender);
+  --chart-4: color-mix(in oklab, var(--color-brand-lavender) 60%, var(--color-brand-ghost) 40%);
+  --chart-5: var(--color-brand-ghost);
+  --sidebar: #0b0e14;
+  --sidebar-foreground: var(--color-brand-ghost);
+  --sidebar-primary: var(--color-brand-soft);
+  --sidebar-primary-foreground: var(--color-brand-black);
+  --sidebar-accent: #1e1f2b;
+  --sidebar-accent-foreground: var(--color-brand-peri);
+  --sidebar-border: color-mix(in srgb, var(--color-brand-lavender) 15%, transparent);
+  --sidebar-ring: var(--color-brand-soft);
+  /* Jerarquía de superficies alineada a la paleta ERP (no grises genéricos). */
+  --surface-1: #000807;
+  --surface-2: #000807;
+  --surface-3: #0b0e14;
+  --surface-4: #0b0e14;
+  --surface-5: #1a1c24;
+  --surface-6: #1e1f2b;
+  --surface-7: #1e1f2b;
+  --surface-8: #252525;
+  --dm-hi-base: rgba(255,255,255,0.01);
+  --dm-hi-mid: rgba(255,255,255,0.02);
+  --dm-hi-high: rgba(255,255,255,0.04);
+  --dm-hi-peak: rgba(255,255,255,0.06);
+  --dm-ring-base: rgba(255,255,255,0.02);
+  --dm-ring-mid: rgba(255,255,255,0.04);
+  --dm-ring-high: rgba(255,255,255,0.06);
+  --dm-drop: rgba(0,0,0,0.18);
+  --shadow-1: inset 0 0 0 1px var(--dm-ring-base);
+  --shadow-2: inset 0 1px 0 0 var(--dm-hi-base), inset 0 0 0 1px var(--dm-ring-base), 0 1px 1px -0.5px var(--dm-drop);
+  --shadow-3: inset 0 1px 0 0 var(--dm-hi-mid), inset 0 0 0 1px var(--dm-ring-base), 0 0 0 1px rgba(0,0,0,0.12), 0 1px 1px -0.5px var(--dm-drop), 0 3px 3px -1.5px var(--dm-drop);
+  --shadow-4: inset 0 1px 0 0 var(--dm-hi-mid), inset 0 0 0 1px var(--dm-ring-mid), 0 0 0 1px rgba(0,0,0,0.14), 0 1px 1px -0.5px var(--dm-drop), 0 3px 3px -1.5px var(--dm-drop), 0 6px 6px -3px var(--dm-drop);
+  --shadow-5: inset 0 1px 0 0 var(--dm-hi-high), inset 0 0 0 1px var(--dm-ring-mid), 0 0 0 1px rgba(0,0,0,0.16), 0 1px 1px -0.5px var(--dm-drop), 0 3px 3px -1.5px var(--dm-drop), 0 6px 6px -3px var(--dm-drop), 0 12px 12px -6px var(--dm-drop);
+  --shadow-6: inset 0 1px 0 0 var(--dm-hi-high), inset 0 0 0 1px var(--dm-ring-high), 0 0 0 1px rgba(0,0,0,0.18), 0 1px 1px -0.5px var(--dm-drop), 0 3px 3px -1.5px var(--dm-drop), 0 6px 6px -3px var(--dm-drop), 0 12px 12px -6px var(--dm-drop), 0 24px 24px -12px var(--dm-drop);
+  --shadow-7: inset 0 1px 0 0 var(--dm-hi-peak), inset 0 0 0 1px var(--dm-ring-high), 0 0 0 1px rgba(0,0,0,0.20), 0 1px 1px -0.5px var(--dm-drop), 0 3px 3px -1.5px var(--dm-drop), 0 6px 6px -3px var(--dm-drop), 0 12px 12px -6px var(--dm-drop), 0 24px 24px -12px var(--dm-drop), 0 48px 48px -24px var(--dm-drop);
+  --shadow-8: inset 0 1px 0 0 var(--dm-hi-peak), inset 0 0 0 1px var(--dm-ring-high), 0 0 0 1px rgba(0,0,0,0.22), 0 1px 1px -0.5px var(--dm-drop), 0 3px 3px -1.5px var(--dm-drop), 0 6px 6px -3px var(--dm-drop), 0 12px 12px -6px var(--dm-drop), 0 24px 24px -12px var(--dm-drop), 0 48px 48px -24px var(--dm-drop), 0 96px 96px -48px var(--dm-drop);
+  --hover: color-mix(in oklab, var(--foreground) 7%, transparent);
+  --active: color-mix(in oklab, var(--foreground) 12%, transparent);
+  --focus-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

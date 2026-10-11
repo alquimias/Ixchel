@@ -26,7 +26,7 @@ import { useShape } from '../../lib/shape-context';
 import { useInputErrorShake } from '../../hooks/use-input-error-shake';
 import { usePrefersReducedMotion } from '../../lib/dotmatrix-hooks';
 
-interface InputGroupProps extends HTMLAttributes<HTMLDivElement> {
+export interface InputGroupProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
 }
 

@@ -34,6 +34,17 @@ Los workflows viven en este repositorio.
 | Workflow | Cuándo corre | Qué produce |
 | --- | --- | --- |
 | CI | push y pull request a `main` | lint, pruebas unitarias y typecheck |
-| Package | push a `main`, tag `v*` o ejecución manual | tarball `.tgz` de `@erp/ui` |
+| Package | push a `main`, tag `v*` o ejecución manual | tarball y publicación en GitHub Packages |
 
-En `main` el tarball queda como artefacto del workflow. Un tag `v*` abre además un GitHub Release con ese archivo. El paquete sigue `private` y no se publica en un registry npm. `pnpm test:storybook` sigue siendo local: necesita Playwright.
+El manifiesto de este repo sigue siendo `@erp/ui` y `private`. GitHub Packages solo acepta el scope de la organización, así que el workflow publica `@alquimias/erp-ui`. Un push a `main` publica `0.0.1-sha<12>`. Un tag `v*` publica esa versión, deja el tarball como artefacto y abre un GitHub Release. `pnpm test:storybook` sigue siendo local: necesita Playwright.
+
+Para instalarlo fuera del monorepo hace falta un token con `read:packages`:
+
+```
+@alquimias:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=TOKEN
+```
+
+```bash
+pnpm add @alquimias/erp-ui
+```

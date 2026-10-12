@@ -12,6 +12,10 @@
     "type": "git",
     "url": "git+https://github.com/alquimias/erp-ui.git"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
   "sideEffects": [
     "**/*.css"
   ],

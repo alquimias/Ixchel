@@ -1,0 +1,76 @@
+# Crea el tarball de @erp/ui sin pasar por el CI del monorepo.
+# En main publica el artefacto del workflow. En un tag v* además abre
+# un GitHub Release con el .tgz. El paquete sigue private y no se
+# publica en un registry npm.
+name: Package
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: package-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Alinear versión con el tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm pkg set version "${GITHUB_REF_NAME#v}"
+
+      - name: Empaquetar
+        run: pnpm pack --pack-destination "$RUNNER_TEMP/package"
+
+      - name: Subir tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: erp-ui-${{ github.sha }}
+          path: ${{ runner.temp }}/package/*.tgz
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publicar GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tarball="$(find "$RUNNER_TEMP/package" -name '*.tgz' -print -quit)"
+          gh release create "$GITHUB_REF_NAME" "$tarball" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --notes "Paquete @erp/ui ${GITHUB_REF_NAME}."

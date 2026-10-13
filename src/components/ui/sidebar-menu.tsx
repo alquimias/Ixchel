@@ -403,7 +403,11 @@ const SidebarMenu = forwardRef<HTMLUListElement, SidebarMenuProps>(
             else if (ref) (ref as React.MutableRefObject<HTMLUListElement | null>).current = node;
           }}
           data-sidebar="menu"
-          className={cn('relative flex w-full min-w-0 flex-col gap-0.5 select-none', className)}
+          className={cn(
+            'relative flex w-full min-w-0 flex-col gap-0.5 select-none',
+            'group-data-[collapsible=icon]/sidebar:items-center',
+            className,
+          )}
           {...containerProps}
           {...props}
         >
@@ -470,7 +474,11 @@ const SidebarMenuItem = forwardRef<HTMLLIElement, SidebarMenuItemProps>(
             else if (ref) (ref as React.MutableRefObject<HTMLLIElement | null>).current = node;
           }}
           data-sidebar="menu-item"
-          className={cn('group/menu-item relative w-full', className)}
+          className={cn(
+            'group/menu-item relative w-full',
+            'group-data-[collapsible=icon]/sidebar:flex group-data-[collapsible=icon]/sidebar:flex-col group-data-[collapsible=icon]/sidebar:items-center',
+            className,
+          )}
           {...props}
         >
           {children}
@@ -496,7 +504,11 @@ const SidebarMenuSubItem = forwardRef<HTMLLIElement, SidebarMenuSubItemProps>(
             else if (ref) (ref as React.MutableRefObject<HTMLLIElement | null>).current = node;
           }}
           data-sidebar="menu-sub-item"
-          className={cn('group/menu-sub-item relative', className)}
+          className={cn(
+            'group/menu-sub-item relative',
+            'group-data-[collapsible=icon]/sidebar:flex group-data-[collapsible=icon]/sidebar:justify-center',
+            className,
+          )}
           {...props}
         >
           {children}
@@ -509,6 +521,28 @@ SidebarMenuSubItem.displayName = 'SidebarMenuSubItem';
 
 // ─── Row label (ghost-span weight animation) ─────────────────────────────────
 
+function leadingText(content: ReactNode): string | undefined {
+  const nodes = Children.toArray(content);
+  const textParts: string[] = [];
+  for (const node of nodes) {
+    if (typeof node === 'string' || typeof node === 'number') textParts.push(String(node));
+    else break;
+  }
+  const label = textParts.join('').trim();
+  return label || undefined;
+}
+
+function labelFromContent(content: ReactNode): string | undefined {
+  const leading = leadingText(content);
+  if (leading) return leading;
+  for (const node of Children.toArray(content)) {
+    if (!isValidElement(node)) continue;
+    const nested = labelFromContent((node.props as { children?: ReactNode }).children);
+    if (nested) return nested;
+  }
+  return undefined;
+}
+
 /** Splits leading string children out as the label so it can get the
  *  ghost-span weight treatment; remaining element children (dots, trailing
  *  icons) pin to the row button's right edge via absolute positioning so
@@ -518,19 +552,24 @@ function MenuRowLabel({
   lit,
   emphasized,
   textClass,
+  omitCollapsedVisual = false,
 }: {
   content: ReactNode;
   lit: boolean;
   emphasized: boolean;
   textClass: string;
+  /** The row already has an `icon` prop — drop chevrons and extra copy. */
+  omitCollapsedVisual?: boolean;
 }) {
   const { state, isMobile } = useSidebar();
   const iconCollapsed = state === 'collapsed' && !isMobile;
   const nodes = Children.toArray(content);
   if (iconCollapsed) {
-    const visual = nodes.filter((node) => isValidElement(node));
-    if (visual.length === 0) return null;
-    return <>{visual}</>;
+    if (omitCollapsedVisual) return null;
+    // Keep the leading graphic (logo, avatar, icon tile) and drop labels,
+    // chevrons and extra copy so the rail stays a single visual.
+    const visual = nodes.find((node) => isValidElement(node));
+    return visual ?? null;
   }
   const textParts: string[] = [];
   let i = 0;
@@ -604,7 +643,7 @@ function MenuRowLabel({
 // ─── SidebarMenuButton ───────────────────────────────────────────────────────
 
 export const sidebarMenuButtonVariants = cva(
-  'peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 group-has-[[data-sidebar=menu-badge]]/menu-item:pr-8 [&_svg]:size-4 [&_svg]:shrink-0 group-data-[collapsible=icon]/sidebar:size-8 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:overflow-hidden group-data-[collapsible=icon]/sidebar:p-2',
+  'peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 group-has-[[data-sidebar=menu-badge]]/menu-item:pr-8 [&_svg]:size-4 [&_svg]:shrink-0 group-data-[collapsible=icon]/sidebar:size-8 group-data-[collapsible=icon]/sidebar:w-8 group-data-[collapsible=icon]/sidebar:mx-auto group-data-[collapsible=icon]/sidebar:shrink-0 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:gap-0 group-data-[collapsible=icon]/sidebar:overflow-hidden group-data-[collapsible=icon]/sidebar:p-0 group-data-[collapsible=icon]/sidebar:px-0 group-data-[collapsible=icon]/sidebar:pr-0',
   {
     variants: {
       variant: {
@@ -651,7 +690,10 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
     const sizeClasses = useSize();
     const buttonRef = useRef<HTMLElement | null>(null);
     const { state, isMobile } = useSidebar();
-    const showIconTooltip = Boolean(tooltip) && state === 'collapsed' && !isMobile;
+    const { template, content } = resolveSlotTemplate(render, asChild, children);
+    const resolvedTooltip = tooltip ?? labelFromContent(content);
+    const iconCollapsed = state === 'collapsed' && !isMobile;
+    const showIconTooltip = Boolean(resolvedTooltip) && iconCollapsed;
 
     const setActive = item?.setActive;
     useIsoLayoutEffect(() => {
@@ -687,21 +729,27 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
           ? 0
           : -1;
 
-    const { template, content } = resolveSlotTemplate(render, asChild, children);
-
     const inner = (
       <>
         {Icon && (
           <Icon
             size={sizeClasses.icon}
-            strokeWidth={lit ? 2 : 1.5}
+            strokeWidth={iconCollapsed || lit ? 2 : 1.5}
             className={cn(
               'shrink-0 transition-[color,stroke-width] duration-80',
-              lit ? 'text-foreground' : (iconClassName ?? 'text-muted-foreground'),
+              iconCollapsed || lit
+                ? 'text-foreground'
+                : (iconClassName ?? 'text-muted-foreground'),
             )}
           />
         )}
-        <MenuRowLabel content={content} lit={lit} emphasized={isActive} textClass={textClass} />
+        <MenuRowLabel
+          content={content}
+          lit={lit}
+          emphasized={isActive}
+          textClass={textClass}
+          omitCollapsedVisual={Boolean(Icon)}
+        />
       </>
     );
 
@@ -719,7 +767,9 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
         'data-size': size,
         'data-active': isActive ? 'true' : undefined,
         'aria-current': isActive ? 'page' : undefined,
-        ...(showIconTooltip && typeof tooltip === 'string' ? { 'aria-label': tooltip } : {}),
+        ...(showIconTooltip && typeof resolvedTooltip === 'string'
+          ? { 'aria-label': resolvedTooltip }
+          : {}),
         tabIndex: tabIdx,
         className: cn(
           sidebarMenuButtonVariants({ variant }),
@@ -728,7 +778,9 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
           // Barra de acento a la izquierda del item activo -- el fondo del
           // overlay ya distingue la fila activa, pero no de forma inequívoca
           // a simple vistazo; esta barra lo hace explícito (D-Sidebar).
-          'before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-primary before:opacity-0 before:transition-opacity before:duration-150 data-[active=true]:before:opacity-100',
+          // En el rail de iconos se oculta: el pseudo-elemento de 2px corre
+          // el glifo y el overlay + color ya marcan el activo.
+          'before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-primary before:opacity-0 before:transition-opacity before:duration-150 data-[active=true]:before:opacity-100 group-data-[collapsible=icon]/sidebar:before:hidden',
           className,
         ),
         ...props,
@@ -739,7 +791,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
     if (!showIconTooltip) return button;
 
     return (
-      <Tooltip content={tooltip} side="right">
+      <Tooltip content={resolvedTooltip} side="right">
         {button}
       </Tooltip>
     );
@@ -760,6 +812,8 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
     const shape = useShape();
     const sizeClasses = useSize();
     const item = useContext(MenuItemContext);
+    const { state, isMobile } = useSidebar();
+    const iconCollapsed = state === 'collapsed' && !isMobile;
     const { template, content } = resolveSlotTemplate(render, asChild, children);
     return slotElement(
       template,
@@ -768,12 +822,14 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
         ref: ref as Ref<HTMLElement>,
         type: template ? undefined : 'button',
         'data-sidebar': 'menu-action',
+        hidden: iconCollapsed,
         className: cn(
           'absolute right-1 z-10 flex size-6 items-center justify-center text-muted-foreground outline-none',
           item?.isSubRow || sizeClasses.variant === 'compact' ? 'top-0.5' : 'top-1',
           'hover:bg-hover hover:text-foreground transition-[color,background-color,opacity] duration-80',
           'focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]',
           '[&_svg]:size-3.5 [&_svg]:shrink-0',
+          'group-data-[collapsible=icon]/sidebar:hidden',
           shape.input,
           showOnHover &&
             'opacity-0 group-hover/menu-item:opacity-100 group-focus-within/menu-item:opacity-100 group-hover/menu-sub-item:opacity-100 group-focus-within/menu-sub-item:opacity-100 data-[state=open]:opacity-100 aria-expanded:opacity-100',
@@ -808,6 +864,7 @@ const SidebarMenuBadge = forwardRef<HTMLDivElement, SidebarMenuBadgeProps>(
         data-sidebar="menu-badge"
         className={cn(
           'pointer-events-none absolute right-2 z-10 flex h-5 min-w-5 items-center justify-center px-1 tabular-nums',
+          'group-data-[collapsible=icon]/sidebar:hidden',
           sizeClasses.variant === 'compact' ? 'top-1 text-[10px]' : 'top-1.5 text-[11px]',
           'transition-[color,font-variation-settings] duration-80',
           lit ? 'text-foreground' : 'text-muted-foreground',
@@ -902,13 +959,13 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
     return (
       <motion.div
         data-slot="sidebar-menu-sub-wrapper"
-        hidden={iconCollapsed}
         // `animate` stays defined from the first render — framer ignores an
         // animate prop that appears later in the element's life. Until the
         // content is measured, a closed sub collapses via the h-0 class and
         // an open one keeps its natural height.
         className={cn(
-          'overflow-hidden group-data-[collapsible=icon]/sidebar:hidden',
+          'overflow-hidden',
+          'group-data-[collapsible=icon]/sidebar:w-full',
           !measured && !open && 'h-0',
         )}
         initial={false}
@@ -931,6 +988,8 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
             aria-hidden={open ? undefined : true}
             className={cn(
               'relative ml-3.5 flex min-w-0 translate-x-px flex-col gap-0.5 border-l border-border py-0.5 pl-2.5 select-none',
+              'group-data-[collapsible=icon]/sidebar:ml-0 group-data-[collapsible=icon]/sidebar:translate-x-0 group-data-[collapsible=icon]/sidebar:border-l-0 group-data-[collapsible=icon]/sidebar:px-0 group-data-[collapsible=icon]/sidebar:items-center',
+              iconCollapsed && 'ml-0 translate-x-0 border-l-0 px-0 items-center',
               className,
             )}
             {...containerProps}
@@ -954,17 +1013,32 @@ export interface SidebarMenuSubButtonProps extends AnchorHTMLAttributes<HTMLAnch
   icon?: IconComponent;
   render?: ReactElement;
   asChild?: boolean;
+  tooltip?: ReactNode;
 }
+
+const ICON_RAIL_SUB_ICON_PX = 14;
 
 const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonProps>(
   (
-    { isActive = false, size = 'md', icon: Icon, render, asChild, className, children, ...props },
+    {
+      isActive = false,
+      size = 'md',
+      icon: Icon,
+      render,
+      asChild,
+      className,
+      children,
+      tooltip,
+      ...props
+    },
     ref,
   ) => {
     const item = useContext(MenuItemContext);
     const shape = useShape();
     const sizeClasses = useSize();
     const buttonRef = useRef<HTMLElement | null>(null);
+    const { state, isMobile } = useSidebar();
+    const iconCollapsed = state === 'collapsed' && !isMobile;
 
     const setActive = item?.setActive;
     useIsoLayoutEffect(() => {
@@ -982,8 +1056,35 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
     const tabIdx = isActive ? 0 : -1;
 
     const { template, content } = resolveSlotTemplate(render, asChild, children);
+    const resolvedTooltip = tooltip ?? labelFromContent(content);
+    const showIconTooltip = Boolean(resolvedTooltip) && iconCollapsed;
 
-    return slotElement(
+    const inner = (
+      <>
+        {Icon && (
+          <Icon
+            size={iconCollapsed ? ICON_RAIL_SUB_ICON_PX : sizeClasses.icon}
+            strokeWidth={iconCollapsed ? 1.5 : lit ? 2 : 1.5}
+            className={cn(
+              'shrink-0 transition-[color,stroke-width] duration-80',
+              lit ? 'text-foreground' : 'text-muted-foreground',
+            )}
+          />
+        )}
+        {/* Sub-rows keep the parent rows' type size — only the row height
+            steps down. In icon mode the label unmounts and the glyph shrinks
+            below the parent rail icon. */}
+        <MenuRowLabel
+          content={content}
+          lit={lit}
+          emphasized={isActive}
+          textClass={size === 'sm' ? 'text-[12px]' : sizeClasses.text}
+          omitCollapsedVisual={Boolean(Icon)}
+        />
+      </>
+    );
+
+    const button = slotElement(
       template,
       'a',
       {
@@ -996,37 +1097,30 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
         'data-size': size,
         'data-active': isActive ? 'true' : undefined,
         'aria-current': isActive ? 'page' : undefined,
+        ...(showIconTooltip && typeof resolvedTooltip === 'string'
+          ? { 'aria-label': resolvedTooltip }
+          : {}),
         tabIndex: tabIdx,
         className: cn(
           'relative z-10 flex w-full cursor-pointer select-none items-center gap-2 px-2 text-left outline-none',
           'group-has-[[data-sidebar=menu-action]]/menu-sub-item:pr-8 group-has-[[data-sidebar=menu-badge]]/menu-sub-item:pr-8',
           size === 'sm' ? 'h-6' : sizeClasses.variant === 'compact' ? 'h-6' : 'h-7',
+          'group-data-[collapsible=icon]/sidebar:size-6 group-data-[collapsible=icon]/sidebar:w-6 group-data-[collapsible=icon]/sidebar:mx-auto group-data-[collapsible=icon]/sidebar:shrink-0 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:gap-0 group-data-[collapsible=icon]/sidebar:overflow-hidden group-data-[collapsible=icon]/sidebar:p-0 group-data-[collapsible=icon]/sidebar:px-0 group-data-[collapsible=icon]/sidebar:pr-0 group-data-[collapsible=icon]/sidebar:[&_svg]:size-3.5',
           shape.input,
-          'before:absolute before:inset-y-1 before:left-0 before:w-0.5 before:rounded-full before:bg-primary before:opacity-0 before:transition-opacity before:duration-150 data-[active=true]:before:opacity-100',
+          'before:absolute before:inset-y-1 before:left-0 before:w-0.5 before:rounded-full before:bg-primary before:opacity-0 before:transition-opacity before:duration-150 data-[active=true]:before:opacity-100 group-data-[collapsible=icon]/sidebar:before:hidden',
           className,
         ),
         ...props,
       },
-      <>
-        {Icon && (
-          <Icon
-            size={sizeClasses.icon}
-            strokeWidth={lit ? 2 : 1.5}
-            className={cn(
-              'shrink-0 transition-[color,stroke-width] duration-80',
-              lit ? 'text-foreground' : 'text-muted-foreground',
-            )}
-          />
-        )}
-        {/* Sub-rows keep the parent rows' type size — only the row height
-            steps down. */}
-        <MenuRowLabel
-          content={content}
-          lit={lit}
-          emphasized={isActive}
-          textClass={size === 'sm' ? 'text-[12px]' : sizeClasses.text}
-        />
-      </>,
+      inner,
+    );
+
+    if (!showIconTooltip) return button;
+
+    return (
+      <Tooltip content={resolvedTooltip} side="right">
+        {button}
+      </Tooltip>
     );
   },
 );

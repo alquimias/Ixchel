@@ -781,7 +781,11 @@ const SidebarHeader = forwardRef<HTMLDivElement, SidebarSectionProps>(
     <div
       ref={ref}
       data-sidebar="header"
-      className={cn('flex shrink-0 flex-col gap-2 p-2', className)}
+      className={cn(
+        'flex shrink-0 flex-col gap-2 p-2',
+        'group-data-[collapsible=icon]/sidebar:items-center',
+        className,
+      )}
       {...props}
     />
   ),
@@ -793,7 +797,11 @@ const SidebarFooter = forwardRef<HTMLDivElement, SidebarSectionProps>(
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn('mt-auto flex shrink-0 flex-col gap-2 p-2', className)}
+      className={cn(
+        'mt-auto flex shrink-0 flex-col gap-2 p-2',
+        'group-data-[collapsible=icon]/sidebar:items-center',
+        className,
+      )}
       {...props}
     />
   ),
@@ -821,7 +829,11 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarSectionProps>(
     <div
       ref={ref}
       data-sidebar="group"
-      className={cn('relative flex w-full min-w-0 flex-col p-2', className)}
+      className={cn(
+        'relative flex w-full min-w-0 flex-col p-2',
+        'group-data-[collapsible=icon]/sidebar:items-center',
+        className,
+      )}
       {...props}
     />
   ),
@@ -871,7 +883,10 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
     const { state, isMobile } = useSidebar();
     const iconCollapsed = state === 'collapsed' && !isMobile;
     const { template, content } = resolveSlotTemplate(render, asChild, children);
-    return slotElement(
+    const tooltip = typeof props['aria-label'] === 'string' ? props['aria-label'] : undefined;
+    const showIconTooltip = Boolean(tooltip) && iconCollapsed;
+
+    const button = slotElement(
       template,
       'button',
       {
@@ -883,14 +898,23 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
           'hover:bg-hover hover:text-foreground transition-[color,background-color] duration-80',
           'focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]',
           '[&_svg]:size-3.5 [&_svg]:shrink-0',
-          'group-data-[collapsible=icon]/sidebar:hidden',
+          'group-data-[collapsible=icon]/sidebar:static group-data-[collapsible=icon]/sidebar:right-auto group-data-[collapsible=icon]/sidebar:top-auto',
+          'group-data-[collapsible=icon]/sidebar:size-8 group-data-[collapsible=icon]/sidebar:shrink-0',
+          'group-data-[collapsible=icon]/sidebar:[&_svg]:size-4',
           shape.item,
           className,
         ),
         ...props,
-        hidden: iconCollapsed,
       },
       content,
+    );
+
+    if (!showIconTooltip) return button;
+
+    return (
+      <Tooltip content={tooltip} side="right">
+        {button}
+      </Tooltip>
     );
   },
 );

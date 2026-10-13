@@ -29,6 +29,28 @@ beforeAll(() => {
   }
 });
 
+function ParentIcon(props: { size?: number; className?: string; strokeWidth?: number }) {
+  return (
+    <svg
+      data-testid="parent-icon"
+      width={props.size}
+      data-stroke={props.strokeWidth}
+      className={props.className}
+    />
+  );
+}
+
+function LeafIcon(props: { size?: number; className?: string; strokeWidth?: number }) {
+  return (
+    <svg
+      data-testid="sub-leaf-icon"
+      width={props.size}
+      data-stroke={props.strokeWidth}
+      className={props.className}
+    />
+  );
+}
+
 const ICON_COLLAPSIBLE: SidebarCollapsible = 'icon';
 
 function railFixture(opts: {
@@ -45,10 +67,12 @@ function railFixture(opts: {
             <SidebarGroupAction aria-label="Acción de grupo">+</SidebarGroupAction>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Ir al inicio">Dashboard</SidebarMenuButton>
+                <SidebarMenuButton icon={ParentIcon} tooltip="Ir al inicio">
+                  Dashboard
+                </SidebarMenuButton>
                 <SidebarMenuSub>
                   <SidebarMenuSubItem>
-                    <SidebarMenuSubButton>Hoja</SidebarMenuSubButton>
+                    <SidebarMenuSubButton icon={LeafIcon}>Hoja</SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>
               </SidebarMenuItem>
@@ -112,9 +136,130 @@ describe('sidebar collapsible=icon', () => {
 
     rerender(railFixture({ open: false }));
     expect(document.querySelector('[data-sidebar="group-label"]')).not.toBeVisible();
-    expect(document.querySelector('[data-sidebar="group-action"]')).not.toBeVisible();
-    expect(document.querySelector('[data-slot="sidebar-menu-sub-wrapper"]')).not.toBeVisible();
+    expect(document.querySelector('[data-sidebar="group-action"]')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Acción de grupo' })).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="sidebar-menu-sub-wrapper"]')).toBeVisible();
     expect(screen.queryAllByText('Dashboard')).toHaveLength(0);
+    expect(screen.queryAllByText('Hoja')).toHaveLength(0);
+  });
+
+  it('colapsado sin dropdown: las hojas quedan en el rail más chicas que el padre', () => {
+    render(railFixture({ open: false, collapsible: 'icon' }));
+    const parent = document.querySelector('[data-sidebar="menu-button"]') as HTMLElement;
+    const leaf = document.querySelector('[data-sidebar="menu-sub-button"]') as HTMLElement;
+    expect(parent).not.toBeNull();
+    expect(leaf).not.toBeNull();
+    expect(parent.className).toMatch(/size-8/);
+    expect(parent.className).toMatch(/sidebar:p-0/);
+    expect(parent.className).toMatch(/mx-auto/);
+    expect(parent.className).toMatch(/justify-center/);
+    expect(leaf.className).toMatch(/size-6/);
+    expect(screen.getByTestId('sub-leaf-icon')).toHaveAttribute('width', '14');
+    const item = parent.closest('[data-sidebar="menu-item"]') as HTMLElement;
+    expect(item.className).toMatch(/flex-col/);
+    expect(leaf.compareDocumentPosition(parent) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+
+  it('colapsado: el padre usa foreground y trazo más grueso que la hoja', () => {
+    render(railFixture({ open: false, collapsible: 'icon' }));
+    const parentIcon = screen.getByTestId('parent-icon');
+    const leafIcon = screen.getByTestId('sub-leaf-icon');
+    expect(parentIcon.getAttribute('class')).toMatch(/text-foreground/);
+    expect(leafIcon.getAttribute('class')).toMatch(/text-muted-foreground/);
+    expect(parentIcon).toHaveAttribute('data-stroke', '2');
+    expect(leafIcon).toHaveAttribute('data-stroke', '1.5');
+  });
+
+  it('colapsado: la hoja activa no usa barra izquierda y sí cambia de color', () => {
+    render(
+      <SidebarProvider open={false} persist={false}>
+        <Sidebar collapsible="icon" variant="inset">
+          <SidebarContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton icon={ParentIcon} tooltip="SG-SST">
+                  SG-SST
+                </SidebarMenuButton>
+                <SidebarMenuSub>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton icon={LeafIcon} isActive tooltip="Hoja">
+                      Hoja
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
+        </Sidebar>
+      </SidebarProvider>,
+    );
+
+    const leaf = document.querySelector('[data-sidebar="menu-sub-button"]') as HTMLElement;
+    expect(leaf.className).toMatch(/before:hidden/);
+    expect(leaf).toHaveAttribute('data-active', 'true');
+    expect(screen.getByTestId('sub-leaf-icon').getAttribute('class')).toMatch(/text-foreground/);
+    const parent = document.querySelector('[data-sidebar="menu-button"]') as HTMLElement;
+    expect(parent.className).toMatch(/before:hidden/);
+  });
+
+  it('colapsado: la acción de grupo queda en el rail y no se recorta', () => {
+    render(railFixture({ open: false, collapsible: 'icon' }));
+    const action = document.querySelector('[data-sidebar="group-action"]') as HTMLElement;
+    expect(action).toBeVisible();
+    expect(action.className).toMatch(/static/);
+    expect(action.className).toMatch(/size-8/);
+    expect(action.className).not.toMatch(/sidebar:hidden/);
+  });
+
+  it('colapsado: deja el gráfico inicial y recorta nombre, chevron y copy extra', () => {
+    render(
+      <SidebarProvider open={false} persist={false}>
+        <Sidebar collapsible="icon" variant="inset">
+          <SidebarContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton size="lg">
+                  <span data-testid="lead-graphic">★</span>
+                  <div>
+                    <span>Acme SAS</span>
+                    <span>SG-SST</span>
+                  </div>
+                  <span data-testid="trailing-chevron">▾</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
+        </Sidebar>
+      </SidebarProvider>,
+    );
+
+    expect(screen.getByTestId('lead-graphic')).toBeInTheDocument();
+    expect(screen.queryByText('Acme SAS')).toBeNull();
+    expect(screen.queryByText('SG-SST')).toBeNull();
+    expect(screen.queryByTestId('trailing-chevron')).toBeNull();
+  });
+
+  it('tooltip del menú cae al texto de la fila si no hay tooltip', async () => {
+    render(
+      <SidebarProvider open={false} persist={false}>
+        <Sidebar collapsible="icon" variant="inset">
+          <SidebarContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton>Dashboard</SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
+        </Sidebar>
+      </SidebarProvider>,
+    );
+
+    const collapsedButton = document.querySelector('[data-sidebar="menu-button"]') as HTMLElement;
+    fireEvent.pointerEnter(collapsedButton);
+    fireEvent.focus(collapsedButton);
+    await waitFor(() => {
+      expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    });
   });
 
   it('tooltip del menú solo aparece en collapsed desktop', async () => {

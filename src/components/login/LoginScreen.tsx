@@ -26,6 +26,8 @@ export type LoginScreenProps = {
   updates?: LoginChangelogUpdate[];
   toolbar?: ReactNode;
   footer?: ReactNode;
+  /** Slot under the submit button (e.g. a password-reset link from the app). */
+  formFooter?: ReactNode;
   style?: CSSProperties;
 };
 
@@ -48,6 +50,7 @@ export function LoginScreen({
   updates = [],
   toolbar,
   footer,
+  formFooter,
   style,
 }: LoginScreenProps) {
   const [email, setEmail] = useState('');
@@ -165,6 +168,7 @@ export function LoginScreen({
           >
             Iniciar sesión
           </Button>
+          {formFooter ? <div className="pt-1">{formFooter}</div> : null}
         </form>
       </div>
     );

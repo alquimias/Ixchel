@@ -33,4 +33,18 @@ describe('LoginScreen', () => {
     expect(fieldTrack('Correo electrónico')?.querySelector('[data-beam]')).toBeNull();
     expect(fieldTrack('Contraseña')?.querySelector('[data-beam]')).toBeNull();
   });
+
+  it('renderiza formFooter debajo del envío', () => {
+    render(
+      <LoginScreen
+        showPassword
+        onSubmit={vi.fn()}
+        formFooter={<a href="/recuperar-contrasena">¿Olvidaste tu contraseña?</a>}
+      />,
+    );
+
+    expect(
+      screen.getByRole('link', { name: '¿Olvidaste tu contraseña?' }),
+    ).toHaveAttribute('href', '/recuperar-contrasena');
+  });
 });

@@ -11,7 +11,7 @@ function fieldShell(label: string) {
 }
 
 describe('LoginScreen', () => {
-  it('muestra un solo beam y lo mueve al input que recibe focus', () => {
+  it('renderiza los inputs del formulario sin borde ni BorderBeam', () => {
     render(<LoginScreen showPassword onSubmit={vi.fn()} />);
 
     const email = screen.getByLabelText('Correo electrónico');
@@ -19,17 +19,18 @@ describe('LoginScreen', () => {
 
     expect(email).toHaveAttribute('type', 'email');
     expect(password).toHaveAttribute('type', 'password');
+    expect(fieldShell('Correo electrónico')).toHaveClass('ring-0');
+    expect(fieldShell('Contraseña')).toHaveClass('ring-0');
     expect(fieldShell('Correo electrónico')).not.toHaveClass('ring-1');
     expect(fieldShell('Contraseña')).not.toHaveClass('ring-1');
     expect(fieldTrack('Correo electrónico')?.querySelector('[data-beam]')).toBeNull();
     expect(fieldTrack('Contraseña')?.querySelector('[data-beam]')).toBeNull();
 
     fireEvent.focus(email);
-    expect(fieldTrack('Correo electrónico')?.querySelector('[data-beam]')).toBeTruthy();
-    expect(fieldTrack('Contraseña')?.querySelector('[data-beam]')).toBeNull();
-
     fireEvent.mouseDown(password);
-    expect(fieldTrack('Contraseña')?.querySelector('[data-beam]')).toBeTruthy();
+    expect(fieldShell('Correo electrónico')).toHaveClass('ring-0');
+    expect(fieldShell('Contraseña')).toHaveClass('ring-0');
     expect(fieldTrack('Correo electrónico')?.querySelector('[data-beam]')).toBeNull();
+    expect(fieldTrack('Contraseña')?.querySelector('[data-beam]')).toBeNull();
   });
 });

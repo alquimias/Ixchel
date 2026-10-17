@@ -1,10 +1,6 @@
 'use client';
 
 import {
-  createContext,
-  useContext,
-  useId,
-  useMemo,
   useRef,
   useState,
   useCallback,
@@ -15,7 +11,6 @@ import {
   type ChangeEvent,
   type FocusEvent,
 } from 'react';
-import { BorderBeam } from 'border-beam';
 import { Field } from '@base-ui/react/field';
 import type { IconComponent } from '../../lib/icon-context';
 import {
@@ -28,44 +23,21 @@ import { fontWeights } from '../../lib/font-weight';
 import { cn } from '../../lib/utils';
 import { useShape } from '../../lib/shape-context';
 import { useInputErrorShake } from '../../hooks/use-input-error-shake';
-import { usePrefersReducedMotion } from '../../lib/dotmatrix-hooks';
 
 export interface InputGroupProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
 }
 
-type InputBeamContextValue = {
-  activeId: string | null;
-  activate: (id: string) => void;
-  deactivate: (id: string) => void;
-};
-
-const InputBeamContext = createContext<InputBeamContextValue | null>(null);
-
 const InputGroup = forwardRef<HTMLDivElement, InputGroupProps>(
   ({ children, className, ...props }, ref) => {
-    const [activeId, setActiveId] = useState<string | null>(null);
-    const activate = useCallback((id: string) => {
-      setActiveId(id);
-    }, []);
-    const deactivate = useCallback((id: string) => {
-      setActiveId((current) => (current === id ? null : current));
-    }, []);
-    const beamContext = useMemo(
-      () => ({ activeId, activate, deactivate }),
-      [activeId, activate, deactivate],
-    );
-
     return (
-      <InputBeamContext.Provider value={beamContext}>
-        <div
-          ref={ref}
-          className={cn('relative flex flex-col gap-3 w-full max-w-full', className)}
-          {...props}
-        >
-          {children}
-        </div>
-      </InputBeamContext.Provider>
+      <div
+        ref={ref}
+        className={cn('relative flex flex-col gap-3 w-full max-w-full', className)}
+        {...props}
+      >
+        {children}
+      </div>
     );
   },
 );
@@ -208,8 +180,8 @@ export interface InputFieldProps extends Omit<
   className?: string;
   hideLabel?: boolean;
   description?: ReactNode;
-  /** Borde animado (p. ej. campo de correo en login). */
-  borderBeam?: boolean;
+  /** Sin anillo en reposo/foco (p. ej. campos del login). El error sí muestra borde. */
+  borderless?: boolean;
 }
 
 const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
@@ -226,7 +198,7 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
       disabled,
       hideLabel,
       description,
-      borderBeam = false,
+      borderless = false,
       type = 'text',
       id,
       ...props
@@ -234,29 +206,9 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
     ref,
   ) => {
     const inputRef = useRef<HTMLInputElement | null>(null);
-    const generatedId = useId();
-    const fieldId = id ?? generatedId;
-    const beam = useContext(InputBeamContext);
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
-    const prefersReducedMotion = usePrefersReducedMotion();
     const shape = useShape();
-
-    const claimBeam = useCallback(() => {
-      if (!borderBeam) return;
-      beam?.activate(fieldId);
-    }, [beam, borderBeam, fieldId]);
-
-    const releaseBeam = useCallback(() => {
-      if (!borderBeam) return;
-      beam?.deactivate(fieldId);
-    }, [beam, borderBeam, fieldId]);
-
-    const showBeam =
-      borderBeam &&
-      !prefersReducedMotion &&
-      !error &&
-      (beam ? beam.activeId === fieldId : isFocused);
 
     const labelActive = isFocused || isHovered;
     const { isError, isShaking } = useInputErrorShake(error);
@@ -268,74 +220,6 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
     });
     const resolvedPlaceholder =
       placeholder ?? (hideLabel ? 'Buscar…' : defaultPlaceholder(label, type));
-
-    const inputShell = (
-      <div
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onMouseDown={(e) => {
-          claimBeam();
-          if (e.target === inputRef.current) return;
-          e.preventDefault();
-          inputRef.current?.focus();
-        }}
-        className={cn(
-          't-input flex items-center gap-2 px-3 py-2 transition-all duration-80',
-          shape.input,
-          isError && 'is-error',
-          isShaking && 'is-shaking',
-          bgClass,
-          borderBeam && !error ? 'ring-0' : cn('ring-1', ringClass),
-        )}
-      >
-        {Icon && (
-          <Icon
-            size={16}
-            strokeWidth={labelActive ? 2 : 1.5}
-            className={cn(
-              'shrink-0 transition-[color,stroke-width] duration-80',
-              labelActive ? 'text-foreground' : 'text-muted-foreground',
-            )}
-          />
-        )}
-        <Field.Control
-          ref={inputRef}
-          id={id}
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => {
-            setIsFocused(true);
-            claimBeam();
-          }}
-          onBlur={(e) => {
-            setIsFocused(false);
-            releaseBeam();
-            onBlur?.(e);
-          }}
-          placeholder={resolvedPlaceholder}
-          disabled={disabled}
-          className="w-full bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground outline-none font-[inherit]"
-          style={{ fontVariationSettings: fontWeights.normal }}
-          {...props}
-        />
-      </div>
-    );
-
-    const inputControl = showBeam ? (
-      <BorderBeam
-        className="block w-full"
-        size="line"
-        theme="auto"
-        colorVariant="ocean"
-        strength={0.85}
-        duration={2.4}
-      >
-        {inputShell}
-      </BorderBeam>
-    ) : (
-      inputShell
-    );
 
     return (
       <Field.Root
@@ -353,7 +237,53 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
       >
         <InputFieldLabel label={label} error={error} hideLabel={hideLabel} htmlFor={id} />
 
-        <div className="t-input-shake-track">{inputControl}</div>
+        <div className="t-input-shake-track">
+          <div
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onMouseDown={(e) => {
+              if (e.target === inputRef.current) return;
+              e.preventDefault();
+              inputRef.current?.focus();
+            }}
+            className={cn(
+              't-input flex items-center gap-2 px-3 py-2 transition-all duration-80',
+              shape.input,
+              isError && 'is-error',
+              isShaking && 'is-shaking',
+              bgClass,
+              borderless && !error ? 'ring-0' : cn('ring-1', ringClass),
+            )}
+          >
+            {Icon && (
+              <Icon
+                size={16}
+                strokeWidth={labelActive ? 2 : 1.5}
+                className={cn(
+                  'shrink-0 transition-[color,stroke-width] duration-80',
+                  labelActive ? 'text-foreground' : 'text-muted-foreground',
+                )}
+              />
+            )}
+            <Field.Control
+              ref={inputRef}
+              id={id}
+              type={type}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={(e) => {
+                setIsFocused(false);
+                onBlur?.(e);
+              }}
+              placeholder={resolvedPlaceholder}
+              disabled={disabled}
+              className="w-full bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground outline-none font-[inherit]"
+              style={{ fontVariationSettings: fontWeights.normal }}
+              {...props}
+            />
+          </div>
+        </div>
 
         {description ? (
           <p className="text-[12px] text-muted-foreground pl-3">{description}</p>

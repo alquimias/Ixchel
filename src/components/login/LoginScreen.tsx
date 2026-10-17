@@ -119,7 +119,7 @@ export function LoginScreen({
               label="Correo electrónico"
               icon={Mail}
               type="email"
-              borderBeam
+              borderless
               value={email}
               onChange={(value) => {
                 setEmail(value);
@@ -135,7 +135,7 @@ export function LoginScreen({
                 label="Contraseña"
                 icon={Lock}
                 type="password"
-                borderBeam
+                borderless
                 value={password}
                 onChange={(value) => {
                   setPassword(value);

@@ -27,7 +27,7 @@ export function LoginBrandIntro({
         <img
           src={logoSrc}
           alt={logoAlt}
-          className="size-full object-contain drop-shadow-[0_12px_20px_rgba(147,149,211,0.35)] dark:drop-shadow-[0_15px_25px_rgba(147,149,211,0.35)]"
+          className="size-full object-contain"
         />
       </div>
 

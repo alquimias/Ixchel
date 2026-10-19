@@ -44,3 +44,8 @@ export const Autoplay: Story = {
   args: { autoplay: { duration: 3000 } },
   render: (args) => <DotsPlayground {...args} />,
 };
+
+export const Alert: Story = {
+  args: { count: 4, value: 1, alertIndex: 2, alertPulse: 1 },
+  render: (args) => <DotsPlayground {...args} />,
+};

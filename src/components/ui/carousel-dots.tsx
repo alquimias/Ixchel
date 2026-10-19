@@ -38,6 +38,7 @@ const PILL_PX = 24;
 /** The light track every dot shares; the playing pill's fill is darker. */
 const TRACK_COLOR = "color-mix(in oklab, var(--foreground), transparent 85%)";
 const FILL_COLOR = "color-mix(in oklab, var(--foreground), transparent 60%)";
+const ALERT_COLOR = "var(--destructive)";
 
 /** The fill is a full-width pill slid in from the left, never scaled:
  *  scaling would squash its rounded end. At 0 a full dot shows, so the
@@ -74,6 +75,10 @@ interface CarouselDotsProps
   progress?: number | MotionValue<number>;
   /** Accessible name for each dot. Defaults to "Go to slide N". */
   getLabel?: (index: number) => string;
+  /** Index of a blocked/invalid step: that dot turns red. */
+  alertIndex?: number;
+  /** Increment to replay the shake while `alertIndex` stays the same. */
+  alertPulse?: number;
 }
 
 const defaultLabel = (index: number) => `Go to slide ${index + 1}`;
@@ -90,6 +95,8 @@ const CarouselDots = forwardRef<HTMLDivElement, CarouselDotsProps>(
       autoplay,
       progress,
       getLabel = defaultLabel,
+      alertIndex,
+      alertPulse = 0,
       className,
       ...props
     },
@@ -181,6 +188,8 @@ const CarouselDots = forwardRef<HTMLDivElement, CarouselDotsProps>(
             index={i}
             label={getLabel(i)}
             current={i === value}
+            alert={i === alertIndex}
+            alertPulse={alertPulse}
             fillTransform={fillTransform}
             reduced={reduced === true}
             registerItem={hover.registerItem}
@@ -198,6 +207,8 @@ function Dot({
   index,
   label,
   current,
+  alert,
+  alertPulse,
   fillTransform,
   reduced,
   registerItem,
@@ -206,6 +217,8 @@ function Dot({
   index: number;
   label: string;
   current: boolean;
+  alert: boolean;
+  alertPulse: number;
   fillTransform: MotionValue<string>;
   reduced: boolean;
   registerItem: (index: number, element: HTMLElement | null) => void;
@@ -220,24 +233,43 @@ function Dot({
       onClick={() => onSelect?.(index)}
       aria-label={label}
       aria-current={current ? "true" : undefined}
+      aria-invalid={alert ? true : undefined}
+      data-alert={alert ? "true" : undefined}
       // Equal padding on every side: an 18px round click area per dot, and
       // 12px between dots. No gap, so the highlight never drops out.
       className="relative z-10 flex items-center rounded-full p-1.5 outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]"
     >
       <motion.span
+        key={alert ? `alert-${alertPulse}` : "idle"}
         className="relative block overflow-hidden rounded-full"
-        style={{ height: DOT_PX, backgroundColor: TRACK_COLOR }}
+        style={{
+          height: DOT_PX,
+          backgroundColor: alert ? ALERT_COLOR : TRACK_COLOR,
+        }}
         initial={false}
-        animate={{ width: current ? PILL_PX : DOT_PX }}
+        animate={{
+          width: current ? PILL_PX : DOT_PX,
+          x: alert && !reduced ? [0, 6, -6, 4, 0] : 0,
+        }}
         // Width is a layout value, which MotionConfig's reduced motion does
         // not cover, so the dot gates it itself: instant under reduced motion.
-        transition={reduced ? { duration: 0 } : spring.moderate}
+        transition={
+          reduced
+            ? { duration: 0 }
+            : {
+                width: spring.moderate,
+                x: { duration: 0.28, times: [0, 0.29, 0.57, 0.79, 1] },
+              }
+        }
       >
         {current && (
           <motion.span
             aria-hidden
             className="absolute inset-0 rounded-full"
-            style={{ backgroundColor: FILL_COLOR, transform: fillTransform }}
+            style={{
+              backgroundColor: alert ? ALERT_COLOR : FILL_COLOR,
+              transform: fillTransform,
+            }}
           />
         )}
       </motion.span>

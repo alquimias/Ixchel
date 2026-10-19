@@ -32,4 +32,24 @@ describe('CarouselDots', () => {
     expect(third).toHaveAttribute('aria-current', 'true');
     expect(first).not.toHaveAttribute('aria-current');
   });
+
+  it('marca el punto en alerta y lo anuncia como inválido', () => {
+    render(
+      <CarouselDots
+        count={4}
+        value={1}
+        alertIndex={2}
+        alertPulse={1}
+        getLabel={(index) => `Ir al paso ${index + 1}`}
+        aria-label="Pasos"
+      />,
+    );
+
+    const third = screen.getByRole('button', { name: 'Ir al paso 3' });
+    expect(third).toHaveAttribute('data-alert', 'true');
+    expect(third).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('button', { name: 'Ir al paso 2' })).not.toHaveAttribute(
+      'data-alert',
+    );
+  });
 });

@@ -12,6 +12,7 @@ import {
   type FocusEvent,
 } from 'react';
 import { Field } from '@base-ui/react/field';
+import { BorderBeam } from 'border-beam';
 import type { IconComponent } from '../../lib/icon-context';
 import {
   formFieldErrorClassName,
@@ -53,18 +54,25 @@ function syncInputRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
   (ref as React.MutableRefObject<T | null>).current = node;
 }
 
+export type InputFieldTone = 'error' | 'warning';
+
 interface InputFieldLabelProps {
   label: string;
   error?: string;
   hideLabel?: boolean;
   htmlFor?: string;
+  tone?: InputFieldTone;
 }
 
-function InputFieldLabel({ label, error, hideLabel, htmlFor }: InputFieldLabelProps) {
+function InputFieldLabel({ label, error, hideLabel, htmlFor, tone = 'error' }: InputFieldLabelProps) {
   return (
     <Field.Label
       htmlFor={htmlFor}
-      className={cn(formFieldLabelClassName, hideLabel && 'sr-only', error && 'text-destructive')}
+      className={cn(
+        formFieldLabelClassName,
+        hideLabel && 'sr-only',
+        error && (tone === 'warning' ? 'text-warning' : 'text-destructive'),
+      )}
       style={formFieldLabelStyle}
     >
       {label}
@@ -77,11 +85,13 @@ function useInputFieldStyles({
   error,
   isFocused,
   isHovered,
+  tone = 'error',
 }: {
   disabled?: boolean;
   error?: string;
   isFocused: boolean;
   isHovered: boolean;
+  tone?: InputFieldTone;
 }) {
   let bgClass: string;
   let ringClass: string;
@@ -90,12 +100,17 @@ function useInputFieldStyles({
     bgClass = 'bg-transparent';
     ringClass = 'ring-border';
   } else if (error) {
-    bgClass = isFocused
-      ? 'bg-card'
-      : isHovered
-        ? 'bg-destructive-light/60'
-        : 'bg-destructive-light/30';
-    ringClass = isFocused || isHovered ? 'ring-destructive' : 'ring-destructive/50';
+    if (tone === 'warning') {
+      bgClass = isFocused ? 'bg-card' : isHovered ? 'bg-warning/40' : 'bg-warning/20';
+      ringClass = isFocused || isHovered ? 'ring-warning' : 'ring-warning/50';
+    } else {
+      bgClass = isFocused
+        ? 'bg-card'
+        : isHovered
+          ? 'bg-destructive-light/60'
+          : 'bg-destructive-light/30';
+      ringClass = isFocused || isHovered ? 'ring-destructive' : 'ring-destructive/50';
+    }
   } else if (isFocused) {
     bgClass = 'bg-card';
     ringClass = 'ring-border';
@@ -182,6 +197,12 @@ export interface InputFieldProps extends Omit<
   description?: ReactNode;
   /** Sin anillo en reposo/foco (p. ej. campos del login). El error sí muestra borde. */
   borderless?: boolean;
+  /** Color del estado inválido. `warning` usa ámbar en vez de rojo destructivo. */
+  tone?: InputFieldTone;
+  /** Sustituye el anillo por el efecto BorderBeam. */
+  beam?: boolean;
+  /** Incrementar para repetir el shake con el mismo mensaje de error. */
+  shakePulse?: number;
 }
 
 const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
@@ -199,6 +220,9 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
       hideLabel,
       description,
       borderless = false,
+      tone = 'error',
+      beam = false,
+      shakePulse = 0,
       type = 'text',
       id,
       ...props
@@ -211,13 +235,15 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
     const shape = useShape();
 
     const labelActive = isFocused || isHovered;
-    const { isError, isShaking } = useInputErrorShake(error);
+    const { isError, isShaking } = useInputErrorShake(error, shakePulse);
     const { bgClass, ringClass } = useInputFieldStyles({
       disabled,
       error,
       isFocused,
       isHovered,
+      tone,
     });
+    const hideRing = beam || (borderless && !error);
     const resolvedPlaceholder =
       placeholder ?? (hideLabel ? 'Buscar…' : defaultPlaceholder(label, type));
 
@@ -235,55 +261,93 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
           className,
         )}
       >
-        <InputFieldLabel label={label} error={error} hideLabel={hideLabel} htmlFor={id} />
+        <InputFieldLabel
+          label={label}
+          error={error}
+          hideLabel={hideLabel}
+          htmlFor={id}
+          tone={tone}
+        />
 
-        <div className="t-input-shake-track">
-          <div
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onMouseDown={(e) => {
-              if (e.target === inputRef.current) return;
-              e.preventDefault();
-              inputRef.current?.focus();
-            }}
-            className={cn(
-              't-input flex items-center gap-2 px-3 py-2 transition-all duration-80',
-              shape.input,
-              isError && 'is-error',
-              isShaking && 'is-shaking',
-              bgClass,
-              borderless && !error ? 'ring-0' : cn('ring-1', ringClass),
-            )}
-          >
-            {Icon && (
-              <Icon
-                size={16}
-                strokeWidth={labelActive ? 2 : 1.5}
+        {(() => {
+          const control = (
+            <div className="t-input-shake-track">
+              <div
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                onMouseDown={(e) => {
+                  if (e.target === inputRef.current) return;
+                  e.preventDefault();
+                  inputRef.current?.focus();
+                }}
                 className={cn(
-                  'shrink-0 transition-[color,stroke-width] duration-80',
-                  labelActive ? 'text-foreground' : 'text-muted-foreground',
+                  't-input flex items-center gap-2 px-3 py-2 transition-all duration-80',
+                  shape.input,
+                  isError && 'is-error',
+                  isShaking && 'is-shaking',
+                  bgClass,
+                  hideRing ? 'ring-0' : cn('ring-1', ringClass),
+                )}
+              >
+                {Icon && (
+                  <Icon
+                    size={16}
+                    strokeWidth={labelActive ? 2 : 1.5}
+                    className={cn(
+                      'shrink-0 transition-[color,stroke-width] duration-80',
+                      labelActive ? 'text-foreground' : 'text-muted-foreground',
+                    )}
+                  />
+                )}
+                <Field.Control
+                  ref={inputRef}
+                  id={id}
+                  type={type}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={(e) => {
+                    setIsFocused(false);
+                    onBlur?.(e);
+                  }}
+                  placeholder={resolvedPlaceholder}
+                  disabled={disabled}
+                  className="w-full bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground outline-none font-[inherit]"
+                  style={{ fontVariationSettings: fontWeights.normal }}
+                  {...props}
+                />
+              </div>
+            </div>
+          );
+
+          if (!beam) return control;
+
+          return (
+            <div className="relative w-full">
+              <div
+                aria-hidden
+                className={cn(
+                  'pointer-events-none absolute inset-x-0 bottom-0 h-px',
+                  error ? 'bg-warning/70' : 'bg-brand-soft/45',
                 )}
               />
-            )}
-            <Field.Control
-              ref={inputRef}
-              id={id}
-              type={type}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={(e) => {
-                setIsFocused(false);
-                onBlur?.(e);
-              }}
-              placeholder={resolvedPlaceholder}
-              disabled={disabled}
-              className="w-full bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground outline-none font-[inherit]"
-              style={{ fontVariationSettings: fontWeights.normal }}
-              {...props}
-            />
-          </div>
-        </div>
+              <BorderBeam
+                className="block w-full overflow-visible"
+                size="line"
+                theme="auto"
+                colorVariant={error ? 'sunset' : 'ocean'}
+                strength={1}
+                brightness={1.45}
+                duration={5}
+                hueRange={14}
+                borderRadius={0}
+                active
+              >
+                {control}
+              </BorderBeam>
+            </div>
+          );
+        })()}
 
         {description ? (
           <p className="text-[12px] text-muted-foreground pl-3">{description}</p>
@@ -291,7 +355,11 @@ const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
 
         <Field.Error
           match
-          className={cn(formFieldErrorClassName, 't-error-msg')}
+          className={cn(
+            formFieldErrorClassName,
+            't-error-msg',
+            tone === 'warning' && 'text-warning',
+          )}
           style={{ fontVariationSettings: fontWeights.medium }}
         >
           {error ?? ''}

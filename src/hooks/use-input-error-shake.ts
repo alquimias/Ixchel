@@ -2,21 +2,24 @@ import { useEffect, useRef, useState } from 'react';
 
 const SHAKE_DURATION_MS = 80 * 2 + 60 * 2;
 
-export function useInputErrorShake(error: string | undefined) {
+export function useInputErrorShake(error: string | undefined, pulse = 0) {
   const [isShaking, setIsShaking] = useState(false);
   const [shakeTrigger, setShakeTrigger] = useState(0);
   const prevErrorRef = useRef<string | undefined>(undefined);
+  const prevPulseRef = useRef(pulse);
 
   useEffect(() => {
     const hadError = Boolean(prevErrorRef.current);
     const hasError = Boolean(error);
     const errorChanged = prevErrorRef.current !== error;
+    const pulseChanged = prevPulseRef.current !== pulse;
     prevErrorRef.current = error;
+    prevPulseRef.current = pulse;
 
-    if (hasError && (!hadError || errorChanged)) {
+    if (hasError && (!hadError || errorChanged || pulseChanged)) {
       setShakeTrigger((trigger) => trigger + 1);
     }
-  }, [error]);
+  }, [error, pulse]);
 
   useEffect(() => {
     if (shakeTrigger === 0) return;

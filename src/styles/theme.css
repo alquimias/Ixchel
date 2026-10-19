@@ -349,3 +349,24 @@
     @apply font-sans;
   }
 }
+
+@keyframes t-caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.t-caret-blink {
+  animation: t-caret-blink 1.05s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-caret-blink {
+    animation: none;
+  }
+}

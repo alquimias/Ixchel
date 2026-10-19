@@ -45,6 +45,8 @@ export function PageHeaderActions({ children, className }: PageHeaderActionsProp
 export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
   return (
     <div
+      data-slot="page-header"
+      data-spotlight="page"
       className={cn(
         'mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-brand-lavender/20 pb-4',
         className,

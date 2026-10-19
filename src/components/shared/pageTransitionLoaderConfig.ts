@@ -7,7 +7,7 @@ export const pageTransitionLoaderDefaults = {
   dotSize: 7,
   speed: 1.3,
   colorPreset: 'solid-theme',
-  color: '#f4f4f5',
+  color: 'var(--foreground)',
   pattern: 'full',
   dotShape: 'square',
   animated: true,

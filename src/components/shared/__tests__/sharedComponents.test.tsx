@@ -84,7 +84,7 @@ describe('StatCard', () => {
   it('renderiza label y value con solo las props requeridas', () => {
     render(<StatCard label="IF anual" value="12,34" animateValue={false} />);
 
-    expect(screen.getByText('IF anual')).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="card-title"]')).toHaveTextContent('IF anual');
     expect(screen.getByText('12,34')).toBeInTheDocument();
   });
 

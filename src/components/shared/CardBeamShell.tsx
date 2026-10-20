@@ -17,7 +17,7 @@ export interface CardBeamShellProps {
 export function CardBeamShell({ children, className }: CardBeamShellProps) {
   return (
     <Card
-      size="sm"
+      size="compact"
       className={cn(
         'border border-border hover:border-primary/40 transition-all duration-300 bg-card overflow-hidden relative group',
         className,

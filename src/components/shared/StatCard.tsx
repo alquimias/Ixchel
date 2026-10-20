@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { CardContent, CardHeader, CardTitle } from '../ui/card';
+import { CardAction, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { CardBeamShell } from './CardBeamShell';
 import { ReelCounter } from './ReelCounter';
 
@@ -52,14 +52,16 @@ export function StatCard({
   return (
     <CardBeamShell className={className}>
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium text-muted-foreground">
+        <CardTitle className="text-muted-foreground">
           <span className="line-clamp-2">{label}</span>
-          {icon ? (
-            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary-text flex items-center justify-center shrink-0">
+        </CardTitle>
+        {icon ? (
+          <CardAction>
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-text">
               {icon}
             </div>
-          ) : null}
-        </CardTitle>
+          </CardAction>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-1">
         <p className="truncate text-3xl font-semibold text-foreground tracking-tight tabular-nums">

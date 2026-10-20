@@ -555,6 +555,28 @@ CardHeader.displayName = "CardHeader";
 
 // ── CardTitle ────────────────────────────────────────────
 
+/** Invisible width sizer: CSS `content` so Testing Library's getByText
+ *  does not match a second copy of the title (the ghost is aria-hidden,
+ *  but getByText still sees DOM text nodes). */
+function toWidthGhost(node: ReactNode): ReactNode {
+  if (node == null || typeof node === "boolean") return node;
+  if (typeof node === "string" || typeof node === "number") {
+    return (
+      <span
+        data-text={String(node)}
+        className="before:content-[attr(data-text)]"
+      />
+    );
+  }
+  if (Array.isArray(node)) {
+    return Children.map(node, toWidthGhost);
+  }
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return cloneElement(node, undefined, toWidthGhost(node.props.children));
+  }
+  return node;
+}
+
 const CardTitle = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>(
   ({ className, children, ...props }, ref) => {
     const { emphasized, orientation } = useContext(CardContext);
@@ -590,7 +612,7 @@ const CardTitle = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>(
           style={{ fontVariationSettings: fontWeights.semibold }}
           aria-hidden="true"
         >
-          {children}
+          {toWidthGhost(children)}
         </span>
         <span
           className={cn(

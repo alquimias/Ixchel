@@ -19,8 +19,23 @@ describe('Card', () => {
     );
 
     expect(cardTitle()).toHaveTextContent('Sede principal');
+    expect(screen.getByText('Sede principal')).toBeInTheDocument();
     expect(screen.getByText('Bogotá')).toBeInTheDocument();
     expect(document.querySelector('[data-slot="card"]')).toBeTruthy();
+  });
+
+  it('el ghost de peso no duplica el título para getByText', () => {
+    render(
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <span className="line-clamp-2">Datos de demostración</span>
+          </CardTitle>
+        </CardHeader>
+      </Card>,
+    );
+
+    expect(screen.getByText('Datos de demostración')).toBeInTheDocument();
   });
 
   it('acepta size compact y el alias sm', () => {

@@ -49,7 +49,9 @@ pnpm build
 
 Storybook escucha en el puerto 6006.
 
-Para volver a vendor el registry de Fluid Functionalism (Base UI):
+La skill de agente vive en `.agents/skills/fluid-functionalism` (enlace en
+`.cursor/skills/fluid-functionalism`). Describe el sistema de movimiento y
+cómo auditar este árbol. Para volver a vendor el registry (Base UI):
 
 ```bash
 pnpm sync:fluid

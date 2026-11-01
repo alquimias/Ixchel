@@ -97,17 +97,27 @@ jobs:
           fi
           npm publish "$tarball" "${publish_args[@]}"
 
+      # setup-node de arriba deja @alquimias → registry.npmjs.org en .npmrc.
+      # Ese scope gana sobre --registry, así que sin reescribir el npmrc el
+      # publish a GitHub Packages termina en npmjs.org y responde 404.
+      - name: Apuntar @alquimias a GitHub Packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: '@alquimias'
+
       - name: Publicar en GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           tarball="$(find "$RUNNER_TEMP/package" -name '*.tgz' -print -quit)"
-          if [[ "$GITHUB_REF" != refs/tags/v* ]] && npm view "@alquimias/ixchel@${version}" version --registry https://npm.pkg.github.com >/dev/null 2>&1; then
+          if [[ "$GITHUB_REF" != refs/tags/v* ]] && npm view "@alquimias/ixchel@${version}" version >/dev/null 2>&1; then
             echo "Ya publicada en GitHub Packages: @alquimias/ixchel@${version}"
             exit 0
           fi
-          publish_args=(--access public --registry https://npm.pkg.github.com)
+          publish_args=(--access public)
           if [[ "$version" == *-* ]]; then
             publish_args+=(--tag dev)
           fi

@@ -1,8 +1,8 @@
-# Publica @alquimias/erp-ui. El manifiesto del repo sigue llamándose @erp/ui
-# (el workspace del ERP lo consume así); el job renombra a @alquimias/erp-ui
-# en el runner. Un tag v* publica esa versión; un push a main publica
-# 0.0.1-sha<12>. Destinos: npmjs.org (público, necesita NPM_TOKEN) y
-# GitHub Packages (el ERP que ya lo consume ahí).
+# Publica Ixchel como @alquimias/ixchel. El manifiesto del repo sigue
+# llamándose @erp/ui (el workspace del ERP lo consume así); el job
+# renombra a @alquimias/ixchel en el runner. Un tag v* publica esa
+# versión; un push a main publica 0.0.1-sha<12>. Destinos: npmjs.org
+# (público, necesita NPM_TOKEN) y GitHub Packages.
 name: Package
 
 on:
@@ -61,7 +61,7 @@ jobs:
             version="0.0.1-sha${GITHUB_SHA::12}"
           fi
           echo "version=${version}" >> "$GITHUB_ENV"
-          npm pkg set name='@alquimias/erp-ui' version="$version" license=MIT
+          npm pkg set name='@alquimias/ixchel' version="$version" license=MIT
           npm pkg delete private
           npm pkg set publishConfig.access=public
           npm pkg delete publishConfig.registry || true
@@ -72,7 +72,7 @@ jobs:
       - name: Subir tarball
         uses: actions/upload-artifact@v4
         with:
-          name: erp-ui-${{ github.sha }}
+          name: ixchel-${{ github.sha }}
           path: ${{ runner.temp }}/package/*.tgz
           if-no-files-found: error
           retention-days: 14
@@ -87,8 +87,8 @@ jobs:
             exit 0
           fi
           tarball="$(find "$RUNNER_TEMP/package" -name '*.tgz' -print -quit)"
-          if [[ "$GITHUB_REF" != refs/tags/v* ]] && npm view "@alquimias/erp-ui@${version}" version >/dev/null 2>&1; then
-            echo "Ya publicada en npmjs: @alquimias/erp-ui@${version}"
+          if [[ "$GITHUB_REF" != refs/tags/v* ]] && npm view "@alquimias/ixchel@${version}" version >/dev/null 2>&1; then
+            echo "Ya publicada en npmjs: @alquimias/ixchel@${version}"
             exit 0
           fi
           publish_args=(--access public --registry https://registry.npmjs.org)
@@ -103,8 +103,8 @@ jobs:
         run: |
           set -euo pipefail
           tarball="$(find "$RUNNER_TEMP/package" -name '*.tgz' -print -quit)"
-          if [[ "$GITHUB_REF" != refs/tags/v* ]] && npm view "@alquimias/erp-ui@${version}" version --registry https://npm.pkg.github.com >/dev/null 2>&1; then
-            echo "Ya publicada en GitHub Packages: @alquimias/erp-ui@${version}"
+          if [[ "$GITHUB_REF" != refs/tags/v* ]] && npm view "@alquimias/ixchel@${version}" version --registry https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "Ya publicada en GitHub Packages: @alquimias/ixchel@${version}"
             exit 0
           fi
           publish_args=(--access public --registry https://npm.pkg.github.com)
@@ -123,4 +123,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" "$tarball" \
             --repo "$GITHUB_REPOSITORY" \
             --title "$GITHUB_REF_NAME" \
-            --notes "Paquete @alquimias/erp-ui ${GITHUB_REF_NAME}."
+            --notes "Ixchel (@alquimias/ixchel) ${GITHUB_REF_NAME}."

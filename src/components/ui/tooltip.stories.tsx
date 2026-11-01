@@ -4,17 +4,15 @@ import { Tooltip } from './tooltip';
 
 const meta = {
   component: Tooltip,
-  tags: ['autodocs', 'ai-generated'],
+  tags: ['autodocs'],
 } satisfies Meta<typeof Tooltip>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: { content: 'Guardar cambios', children: <Button>Guardar</Button> },
-  render: () => (
-    <Tooltip content="Guardar cambios">
-      <Button>Guardar</Button>
-    </Tooltip>
-  ),
+  args: {
+    content: 'Copy to clipboard',
+    children: <Button variant="secondary">Hover me</Button>,
+  },
 };

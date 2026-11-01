@@ -1,493 +1,297 @@
-'use client';
+"use client";
 
 import {
   useRef,
   useState,
-  useCallback,
+  useMemo,
+  createContext,
+  useContext,
   forwardRef,
   type ReactNode,
   type HTMLAttributes,
   type InputHTMLAttributes,
-  type ChangeEvent,
-  type FocusEvent,
-} from 'react';
-import { Field } from '@base-ui/react/field';
-import { BorderBeam } from 'border-beam';
-import type { IconComponent } from '../../lib/icon-context';
-import {
-  formFieldErrorClassName,
-  formFieldLabelClassName,
-  formFieldLabelStyle,
-  formFieldStackClassName,
-} from '../../lib/form-field-styles';
-import { fontWeights } from '../../lib/font-weight';
-import { cn } from '../../lib/utils';
-import { useShape } from '../../lib/shape-context';
-import { useInputErrorShake } from '../../hooks/use-input-error-shake';
+} from "react";
+import { Field } from "@base-ui/react/field";
+import type { IconComponent } from "../../lib/icon-context";
+import { cn } from "../../lib/utils";
+import { fontWeights } from "../../lib/font-weight";
+import { useShape } from "../../lib/shape-context";
+import { SizeProvider, useSize, type SizeVariant } from "../../lib/size-context";
+import { useFluidHover, useRegisterFluidHoverItem } from "../../hooks/use-fluid-hover";
 
-export interface InputGroupProps extends HTMLAttributes<HTMLDivElement> {
+// ---------------------------------------------------------------------------
+// InputGroup stacks labelled text fields that share one fluid hover scope.
+// At rest a field has no fill and no visible ring. The field nearest the
+// pointer shows a faint fill and its ring; the focused field lifts to the
+// card surface. There is no separate highlight element: each field draws its
+// own state.
+// ---------------------------------------------------------------------------
+
+interface InputGroupContextValue {
+  registerItem: (index: number, element: HTMLElement | null) => void;
+  activeIndex: number | null;
+}
+
+const InputGroupContext = createContext<InputGroupContextValue | null>(null);
+
+function useInputGroup() {
+  const ctx = useContext(InputGroupContext);
+  if (!ctx)
+    throw new Error("useInputGroup must be used within an InputGroup");
+  return ctx;
+}
+
+interface InputGroupProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
+  /** Pins the group's fields to one step of the size ladder (default 36px,
+   *  compact 28px). Omitted, they follow the surrounding SizeProvider. */
+  size?: SizeVariant;
 }
 
 const InputGroup = forwardRef<HTMLDivElement, InputGroupProps>(
-  ({ children, className, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn('relative flex flex-col gap-3 w-full max-w-full', className)}
-        {...props}
-      >
-        {children}
-      </div>
+  ({ children, size, className, ...props }, ref) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const { activeIndex, handlers, registerItem } =
+      useFluidHover(containerRef);
+
+    const contextValue = useMemo(
+      () => ({ registerItem, activeIndex }),
+      [registerItem, activeIndex]
     );
-  },
+
+    const group = (
+      <InputGroupContext.Provider value={contextValue}>
+        <div
+          ref={(node) => {
+            (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            if (typeof ref === "function") ref(node);
+            else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+          }}
+          onMouseEnter={handlers.onMouseEnter}
+          onMouseMove={handlers.onMouseMove}
+          onMouseLeave={handlers.onMouseLeave}
+          // `relative` makes this div the fields' offsetParent — the fluid hover
+          // hook measures items via offsetTop and compares against
+          // container-relative mouse coords, so the two coordinate spaces must
+          // share this origin (same as every other fluid hover consumer).
+          className={cn("relative flex flex-col gap-3 w-72 max-w-full", className)}
+          {...props}
+        >
+          {children}
+        </div>
+      </InputGroupContext.Provider>
+    );
+
+    // A size prop pins every field in the group to one ladder step.
+    return size ? <SizeProvider size={size}>{group}</SizeProvider> : group;
+  }
 );
 
-InputGroup.displayName = 'InputGroup';
+InputGroup.displayName = "InputGroup";
 
-function syncInputRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
-  if (!ref) return;
-  if (typeof ref === 'function') {
-    ref(node);
-    return;
-  }
-  (ref as React.MutableRefObject<T | null>).current = node;
-}
-
-export type InputFieldTone = 'error' | 'warning';
-
-interface InputFieldLabelProps {
+interface InputFieldProps
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "index"> {
   label: string;
-  error?: string;
-  hideLabel?: boolean;
-  htmlFor?: string;
-  tone?: InputFieldTone;
-}
-
-function InputFieldLabel({ label, error, hideLabel, htmlFor, tone = 'error' }: InputFieldLabelProps) {
-  return (
-    <Field.Label
-      htmlFor={htmlFor}
-      className={cn(
-        formFieldLabelClassName,
-        hideLabel && 'sr-only',
-        error && (tone === 'warning' ? 'text-warning' : 'text-destructive'),
-      )}
-      style={formFieldLabelStyle}
-    >
-      {label}
-    </Field.Label>
-  );
-}
-
-function useInputFieldStyles({
-  disabled,
-  error,
-  isFocused,
-  isHovered,
-  tone = 'error',
-}: {
-  disabled?: boolean;
-  error?: string;
-  isFocused: boolean;
-  isHovered: boolean;
-  tone?: InputFieldTone;
-}) {
-  let bgClass: string;
-  let ringClass: string;
-
-  if (disabled) {
-    bgClass = 'bg-transparent';
-    ringClass = 'ring-border';
-  } else if (error) {
-    if (tone === 'warning') {
-      bgClass = isFocused ? 'bg-card' : isHovered ? 'bg-warning/40' : 'bg-warning/20';
-      ringClass = isFocused || isHovered ? 'ring-warning' : 'ring-warning/50';
-    } else {
-      bgClass = isFocused
-        ? 'bg-card'
-        : isHovered
-          ? 'bg-destructive-light/60'
-          : 'bg-destructive-light/30';
-      ringClass = isFocused || isHovered ? 'ring-destructive' : 'ring-destructive/50';
-    }
-  } else if (isFocused) {
-    bgClass = 'bg-card';
-    ringClass = 'ring-border';
-  } else if (isHovered) {
-    bgClass = 'bg-muted/50';
-    ringClass = 'ring-border';
-  } else {
-    // Borde visible en reposo, igual que `Select` (bordered) y `Textarea`: antes el
-    // campo era invisible hasta el hover/foco y desentonaba junto a ellos.
-    bgClass = 'bg-transparent';
-    ringClass = 'ring-border';
-  }
-
-  return { bgClass, ringClass };
-}
-
-function normalizeFieldLabel(label: string): string {
-  return label.replace(/\s*\*+\s*$/, '').trim();
-}
-
-const PLACEHOLDER_EXAMPLES: Record<string, string> = {
-  'número de documento': '1234567890',
-  nit: '900123456-7',
-  dirección: 'Calle 123 #45-67',
-  teléfono: '3001234567',
-  'correo corporativo': 'usuario@empresa.com',
-  'correo electrónico': 'correo@ejemplo.com',
-  'primer nombre': 'Juan',
-  'segundo nombre': 'Carlos',
-  'primer apellido': 'Pérez',
-  'segundo apellido': 'Gómez',
-  proceso: 'Producción',
-  'área / zona': 'Bodega principal',
-  actividad: 'Operación de montacargas',
-  'trabajadores expuestos': '5',
-  responsable: 'Nombre del responsable',
-  tema: 'Trabajo en alturas',
-  instructor: 'Juan Pérez',
-  lugar: 'Sala de capacitación',
-  'ips examinadora': 'IPS Salud Ocupacional',
-  referencia: 'REF-001',
-  talla: 'M',
-  cantidad: '1',
-  'duración (horas)': '2',
-  nombre: 'Coordinador SST',
-  'actividad económica': 'Manufactura de productos metálicos',
-  'arl afiliada': 'Sura, Colmena, Positiva…',
-};
-
-function defaultPlaceholder(label: string, type = 'text'): string | undefined {
-  const normalized = normalizeFieldLabel(label);
-  const key = normalized.toLowerCase();
-
-  if (type === 'email' || key.includes('correo')) {
-    return 'correo@ejemplo.com';
-  }
-  if (type === 'date') return 'aaaa-mm-dd';
-  if (type === 'datetime-local') return 'aaaa-mm-dd --:--';
-  if (type === 'number') {
-    return PLACEHOLDER_EXAMPLES[key] ? `Ej. ${PLACEHOLDER_EXAMPLES[key]}` : 'Ej. 1';
-  }
-
-  const example = PLACEHOLDER_EXAMPLES[key];
-  if (example) return `Ej. ${example}`;
-
-  return `Ingresa ${normalized.toLowerCase()}`;
-}
-
-export interface InputFieldProps extends Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  'onChange' | 'index' | 'value'
-> {
-  label: string;
+  /** Keep the label for assistive tech but don't render it — for inline
+   *  fields (a toolbar search) where the placeholder carries the meaning. */
+  labelHidden?: boolean;
   placeholder?: string;
   icon?: IconComponent;
-  index?: number;
+  index: number;
   value: string;
   onChange: (value: string) => void;
-  onBlur?: (event: FocusEvent<HTMLInputElement>) => void;
   error?: string;
   disabled?: boolean;
   className?: string;
-  hideLabel?: boolean;
-  description?: ReactNode;
-  /** Sin anillo en reposo/foco (p. ej. campos del login). El error sí muestra borde. */
-  borderless?: boolean;
-  /** Color del estado inválido. `warning` usa ámbar en vez de rojo destructivo. */
-  tone?: InputFieldTone;
-  /** Sustituye el anillo por el efecto BorderBeam. */
-  beam?: boolean;
-  /** Incrementar para repetir el shake con el mismo mensaje de error. */
-  shakePulse?: number;
 }
 
 const InputField = forwardRef<HTMLDivElement, InputFieldProps>(
   (
     {
-      className,
       label,
+      labelHidden,
       placeholder,
       icon: Icon,
+      index,
       value,
       onChange,
-      onBlur,
       error,
       disabled,
-      hideLabel,
-      description,
-      borderless = false,
-      tone = 'error',
-      beam = false,
-      shakePulse = 0,
-      type = 'text',
-      id,
-      ...props
-    },
-    ref,
-  ) => {
-    const inputRef = useRef<HTMLInputElement | null>(null);
-    const [isFocused, setIsFocused] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
-    const shape = useShape();
-
-    const labelActive = isFocused || isHovered;
-    const { isError, isShaking } = useInputErrorShake(error, shakePulse);
-    const { bgClass, ringClass } = useInputFieldStyles({
-      disabled,
-      error,
-      isFocused,
-      isHovered,
-      tone,
-    });
-    const hideRing = beam || (borderless && !error);
-    const resolvedPlaceholder =
-      placeholder ?? (hideLabel ? 'Buscar…' : defaultPlaceholder(label, type));
-
-    return (
-      <Field.Root
-        ref={ref}
-        invalid={!!error}
-        disabled={disabled}
-        className={cn(
-          formFieldStackClassName,
-          't-input-wrap',
-          isError && 'is-error',
-          'cursor-text',
-          disabled && 'opacity-50 pointer-events-none',
-          className,
-        )}
-      >
-        <InputFieldLabel
-          label={label}
-          error={error}
-          hideLabel={hideLabel}
-          htmlFor={id}
-          tone={tone}
-        />
-
-        {(() => {
-          const control = (
-            <div className="t-input-shake-track">
-              <div
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-                onMouseDown={(e) => {
-                  if (e.target === inputRef.current) return;
-                  e.preventDefault();
-                  inputRef.current?.focus();
-                }}
-                className={cn(
-                  't-input flex items-center gap-2 px-3 py-2 transition-all duration-80',
-                  shape.input,
-                  isError && 'is-error',
-                  isShaking && 'is-shaking',
-                  bgClass,
-                  hideRing ? 'ring-0' : cn('ring-1', ringClass),
-                )}
-              >
-                {Icon && (
-                  <Icon
-                    size={16}
-                    strokeWidth={labelActive ? 2 : 1.5}
-                    className={cn(
-                      'shrink-0 transition-[color,stroke-width] duration-80',
-                      labelActive ? 'text-foreground' : 'text-muted-foreground',
-                    )}
-                  />
-                )}
-                <Field.Control
-                  ref={inputRef}
-                  id={id}
-                  type={type}
-                  value={value}
-                  onChange={(e) => onChange(e.target.value)}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={(e) => {
-                    setIsFocused(false);
-                    onBlur?.(e);
-                  }}
-                  placeholder={resolvedPlaceholder}
-                  disabled={disabled}
-                  className="w-full bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground outline-none font-[inherit]"
-                  style={{ fontVariationSettings: fontWeights.normal }}
-                  {...props}
-                />
-              </div>
-            </div>
-          );
-
-          if (!beam) return control;
-
-          return (
-            <div className="relative w-full">
-              <div
-                aria-hidden
-                className={cn(
-                  'pointer-events-none absolute inset-x-0 bottom-0 h-px',
-                  error ? 'bg-warning/70' : 'bg-brand-soft/45',
-                )}
-              />
-              <BorderBeam
-                className="block w-full overflow-visible"
-                size="line"
-                theme="auto"
-                colorVariant={error ? 'sunset' : 'ocean'}
-                strength={1}
-                brightness={1.45}
-                duration={5}
-                hueRange={14}
-                borderRadius={0}
-                active
-              >
-                {control}
-              </BorderBeam>
-            </div>
-          );
-        })()}
-
-        {description ? (
-          <p className="text-[12px] text-muted-foreground pl-3">{description}</p>
-        ) : null}
-
-        <Field.Error
-          match
-          className={cn(
-            formFieldErrorClassName,
-            't-error-msg',
-            tone === 'warning' && 'text-warning',
-          )}
-          style={{ fontVariationSettings: fontWeights.medium }}
-        >
-          {error ?? ''}
-        </Field.Error>
-      </Field.Root>
-    );
-  },
-);
-
-InputField.displayName = 'InputField';
-
-export interface InputFileFieldProps extends Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  'type' | 'onChange' | 'index' | 'value'
-> {
-  label: string;
-  index?: number;
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onBlur?: (event: FocusEvent<HTMLInputElement>) => void;
-  error?: string;
-  disabled?: boolean;
-  className?: string;
-  hideLabel?: boolean;
-  description?: ReactNode;
-  inputRef?: React.Ref<HTMLInputElement>;
-}
-
-const InputFileField = forwardRef<HTMLDivElement, InputFileFieldProps>(
-  (
-    {
       className,
-      label,
-      onChange,
-      onBlur,
-      error,
-      disabled,
-      hideLabel,
-      description,
-      inputRef: fileInputRefProp,
-      id,
       ...props
     },
-    ref,
+    ref
   ) => {
-    const controlRef = useRef<HTMLInputElement | null>(null);
+    const internalRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLElement | null>(null);
+    const { registerItem, activeIndex } = useInputGroup();
     const [isFocused, setIsFocused] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
     const shape = useShape();
-    const { isError, isShaking } = useInputErrorShake(error);
+    const sizeClasses = useSize();
+    const compact = sizeClasses.variant === "compact";
 
-    const { bgClass, ringClass } = useInputFieldStyles({
-      disabled,
-      error,
-      isFocused,
-      isHovered,
-    });
+    useRegisterFluidHoverItem(registerItem, index, internalRef);
 
-    const assignFileControlRef = useCallback(
-      (node: HTMLInputElement | null) => {
-        controlRef.current = node;
-        syncInputRef(fileInputRefProp, node);
-      },
-      [fileInputRefProp],
-    );
+    // Lit when nearest the pointer OR focused, so tabbing through the form
+    // shows the same cue as hovering it.
+    const isActive = activeIndex === index;
+    const labelActive = isActive || isFocused;
+
+    const handleFocus = () => {
+      setIsFocused(true);
+    };
+
+    const handleBlur = () => {
+      setIsFocused(false);
+    };
+
+    // Input container classes. The first match wins: disabled, error,
+    // focused, hovered, rest. An error stays frameless at rest (the red label
+    // and message already carry it) and shows its red ring on hover or focus.
+    // Focus lifts the field to the card surface; hover only tints it.
+    let bgClass: string;
+    let ringClass: string;
+
+    if (disabled) {
+      bgClass = "bg-transparent";
+      ringClass = "ring-border";
+    } else if (error) {
+      bgClass = isFocused ? "bg-card" : isActive ? "bg-destructive-light/60" : "bg-transparent";
+      ringClass = isFocused || isActive ? "ring-destructive/50" : "ring-transparent";
+    } else if (isFocused) {
+      bgClass = "bg-card";
+      ringClass = "ring-border";
+    } else if (isActive) {
+      bgClass = "bg-muted/50";
+      ringClass = "ring-border";
+    } else {
+      bgClass = "bg-transparent";
+      ringClass = "ring-transparent";
+    }
 
     return (
+      // Base UI Field wires the accessibility plumbing: Field.Label's htmlFor
+      // targets the control, Field.Error's generated id lands in the control's
+      // aria-describedby, and `invalid` drives aria-invalid / data-invalid.
       <Field.Root
-        ref={ref}
+        ref={(node) => {
+          (internalRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+          if (typeof ref === "function") ref(node);
+          else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }}
         invalid={!!error}
         disabled={disabled}
         className={cn(
-          formFieldStackClassName,
-          't-input-wrap',
-          isError && 'is-error',
-          disabled && 'opacity-50 pointer-events-none',
-          className,
+          "flex flex-col gap-1 cursor-text",
+          disabled && "opacity-50 pointer-events-none",
+          className
         )}
       >
-        <InputFieldLabel label={label} error={error} hideLabel={hideLabel} htmlFor={id} />
-
-        <div className="t-input-shake-track">
-          <div
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            className={cn(
-              't-input flex items-center gap-2 px-3 py-2 ring-1 transition-all duration-80',
-              shape.input,
-              isError && 'is-error',
-              isShaking && 'is-shaking',
-              bgClass,
-              ringClass,
-            )}
+        {/* Label — sr-only when hidden so the field keeps its accessible
+            name and the htmlFor wiring. */}
+        <Field.Label
+          className={cn(
+            labelHidden ? "sr-only" : "inline-grid",
+            sizeClasses.text,
+            // One notch tighter than the ladder's control padding — the field
+            // ring is invisible at rest, so the roomier inset reads as a gap.
+            !labelHidden && (compact ? "pl-2" : "pl-2.5")
+          )}
+        >
+          {/* An invisible semibold copy shares the grid cell and reserves the
+              bold width, so a heavier label never shifts the layout. */}
+          <span
+            className="col-start-1 row-start-1 invisible"
+            style={{ fontVariationSettings: fontWeights.semibold }}
+            aria-hidden="true"
           >
-            <Field.Control
-              ref={assignFileControlRef}
-              id={id}
-              type="file"
-              onChange={onChange}
-              onFocus={() => setIsFocused(true)}
-              onBlur={(e) => {
-                setIsFocused(false);
-                onBlur?.(e);
-              }}
-              disabled={disabled}
-              className="w-full bg-transparent text-[13px] text-foreground outline-none file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs file:font-medium"
-              style={{ fontVariationSettings: fontWeights.normal }}
-              {...props}
+            {label}
+          </span>
+          <span
+            className={cn(
+              "col-start-1 row-start-1",
+              error ? "text-destructive" : "text-muted-foreground"
+            )}
+            style={{
+              fontVariationSettings: fontWeights.normal,
+            }}
+          >
+            {label}
+          </span>
+        </Field.Label>
+
+        {/* Input container */}
+        <div
+          onMouseDown={(e) => {
+            // The old wrapper was one big <label>, so a click anywhere (icon,
+            // padding) focused the input. Keep that, without disturbing the
+            // input's own caret placement.
+            if (e.target === inputRef.current) return;
+            e.preventDefault();
+            inputRef.current?.focus();
+          }}
+          className={cn(
+            // Fixed height (was py-2 around the line box) so the field sits
+            // exactly on the ladder's control height.
+            `flex items-center ${sizeClasses.gap} ${shape.input} ${
+              compact ? "px-2" : "px-2.5"
+            } ${sizeClasses.control} ring-1 transition-all duration-80`,
+            bgClass,
+            ringClass
+          )}
+        >
+          {/* The icon wakes with the field: muted → foreground and stroke
+              1.5 → 2 over 80ms. */}
+          {Icon && (
+            <Icon
+              size={sizeClasses.icon}
+              strokeWidth={labelActive ? 2 : 1.5}
+              className={cn(
+                "shrink-0 transition-[color,stroke-width] duration-80",
+                labelActive
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              )}
             />
-          </div>
+          )}
+          <Field.Control
+            ref={inputRef}
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            placeholder={placeholder}
+            className={cn(
+              "w-full rounded-none bg-transparent text-foreground placeholder:text-muted-foreground outline-none font-[inherit]",
+              sizeClasses.field
+            )}
+            style={{ fontVariationSettings: fontWeights.normal }}
+            {...props}
+          />
         </div>
 
-        {description ? (
-          <p className="text-[12px] text-muted-foreground pl-3">{description}</p>
-        ) : null}
-
-        <Field.Error
-          match
-          className={cn(formFieldErrorClassName, 't-error-msg')}
-          style={{ fontVariationSettings: fontWeights.medium }}
-        >
-          {error ?? ''}
-        </Field.Error>
+        {/* Error message: `match` pins it visible while the controlled
+            `error` prop stands. Same inset as the label above. */}
+        {error && (
+          <Field.Error
+            match
+            className={cn(
+              "text-destructive",
+              compact ? "text-[length:var(--fs-caption-compact,11px)] leading-[var(--lh-caption-compact,14px)] pl-2" : "text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] pl-2.5"
+            )}
+            style={{ fontVariationSettings: fontWeights.normal }}
+          >
+            {error}
+          </Field.Error>
+        )}
       </Field.Root>
     );
-  },
+  }
 );
 
-InputFileField.displayName = 'InputFileField';
+InputField.displayName = "InputField";
 
-export { InputGroup, InputField, InputFileField };
+export { InputGroup, InputField };
 export default InputGroup;

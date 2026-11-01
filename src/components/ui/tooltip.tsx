@@ -1,14 +1,21 @@
-'use client';
+"use client";
 
-/* eslint-disable @typescript-eslint/no-unused-vars -- motion prop stripping */
-
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip';
-import { motion, useMotionValue } from 'framer-motion';
-import { cn } from '../../lib/utils';
-import { spring } from '../../lib/springs';
-import { fontWeights } from '../../lib/font-weight';
-import { useShape } from '../../lib/shape-context';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
+import { motion, useMotionValue } from "motion/react";
+import { cn } from "../../lib/utils";
+import { spring, exitFallbackMs } from "../../lib/springs";
+import { omit } from "../../lib/omit";
+import { fontWeights } from "../../lib/font-weight";
+import { useShape } from "../../lib/shape-context";
 
 // ---------------------------------------------------------------------------
 // Portal container context
@@ -49,6 +56,8 @@ interface TooltipProviderProps {
   /** After a tooltip closes, adjacent tooltips opened within this window
    *  skip the hover delay, in ms. Defaults to 300. */
   skipDelayDuration?: number;
+  /** Accepted for Radix tooltip parity (color-picker). Ignored. */
+  disableHoverableContent?: boolean;
 }
 
 /** Groups descendant Tooltips so that once one opens, moving to an adjacent
@@ -62,7 +71,10 @@ function TooltipProvider({
 }: TooltipProviderProps) {
   return (
     <TooltipGroupContext.Provider value={true}>
-      <TooltipPrimitive.Provider delay={delayDuration} timeout={skipDelayDuration}>
+      <TooltipPrimitive.Provider
+        delay={delayDuration}
+        timeout={skipDelayDuration}
+      >
         {children}
       </TooltipPrimitive.Provider>
     </TooltipGroupContext.Provider>
@@ -73,7 +85,7 @@ function TooltipProvider({
 // Types
 // ---------------------------------------------------------------------------
 
-type TooltipSide = 'top' | 'right' | 'bottom' | 'left';
+type TooltipSide = "top" | "right" | "bottom" | "left";
 
 interface TooltipProps {
   content: ReactNode;
@@ -84,12 +96,15 @@ interface TooltipProps {
    *  ambient TooltipProvider's delayDuration when one is present. */
   delayDuration?: number;
   className?: string;
+  /** Extra classes for the portalled positioner element — pass a z utility
+   *  here to lift the whole tooltip above other fixed layers (default z-50). */
+  contentClassName?: string;
   /** When true, forces the tooltip open. When false, forces it closed. When undefined, uses default hover/focus behavior. */
   forceOpen?: boolean;
   /** Follow the cursor along one axis while hovering the trigger — for tall
    *  or wide triggers (the Sidebar rail) where a centered tooltip sits far
    *  from the pointer. The other axis stays anchored by `side`. */
-  followCursor?: 'x' | 'y';
+  followCursor?: "x" | "y";
   /** Called when the tooltip's internal open state changes (before forceOpen is applied). */
   onOpenChange?: (open: boolean) => void;
 }
@@ -100,13 +115,13 @@ interface TooltipProps {
 
 function getSlideOffset(side: TooltipSide) {
   switch (side) {
-    case 'top':
+    case "top":
       return { y: 4 };
-    case 'bottom':
+    case "bottom":
       return { y: -4 };
-    case 'left':
+    case "left":
       return { x: 4 };
-    case 'right':
+    case "right":
       return { x: -4 };
   }
 }
@@ -115,19 +130,73 @@ function getSlideOffset(side: TooltipSide) {
 // Tooltip
 // ---------------------------------------------------------------------------
 
+// Base UI unmounts a closing popup once the animations it can detect on the
+// popup element end. It misses the Motion exit spring, which it cuts.
+// A close that calls preventUnmountOnClose() in onOpenChange stays mounted
+// until the content calls actionsRef.unmount(). A close made by setting
+// `open` never reaches onOpenChange, so the root stays open until that close
+// is replayed through actionsRef.close(), which does.
+function usePopupExit(open: boolean, setOpen: (open: boolean) => void) {
+  const actionsRef = useRef<TooltipPrimitive.Root.Actions | null>(null);
+  const [rootOpen, setRootOpen] = useState(open);
+  if (open && !rootOpen) setRootOpen(true);
+  useLayoutEffect(() => {
+    if (open || !rootOpen) return;
+    // The root fills actionsRef before this effect runs; without it, close
+    // straight away rather than stay open.
+    if (actionsRef.current) actionsRef.current.close();
+    else setRootOpen(false);
+  }, [open, rootOpen]);
+  const onOpenChange = (
+    next: boolean,
+    details: { preventUnmountOnClose: () => void }
+  ) => {
+    if (!next) {
+      details.preventUnmountOnClose();
+      setRootOpen(false);
+    }
+    // A replayed close finds `open` already false: nothing to report.
+    if (next !== open) setOpen(next);
+  };
+  return { actionsRef, rootOpen: open || rootOpen, onOpenChange };
+}
+
 function Tooltip({
   content,
   children,
-  side = 'top',
+  side = "top",
   sideOffset = 8,
   delayDuration,
   className,
+  contentClassName,
   forceOpen,
   onOpenChange: onOpenChangeProp,
   followCursor,
 }: TooltipProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = forceOpen !== undefined ? forceOpen : internalOpen;
+  const { actionsRef, rootOpen, onOpenChange } = usePopupExit(open, (v) => {
+    setInternalOpen(v);
+    onOpenChangeProp?.(v);
+  });
+  // Fallback release for the held unmount: the popup's onAnimationComplete is
+  // the primary signal, but rAF-driven animation callbacks can stall in
+  // throttled/background tabs. Armed only by a close, so a page of tooltips
+  // that never opened holds no timers.
+  const openedRef = useRef(open);
+  useEffect(() => {
+    if (open) {
+      openedRef.current = true;
+      return;
+    }
+    if (!openedRef.current) return;
+    openedRef.current = false;
+    const id = setTimeout(
+      () => actionsRef.current?.unmount(),
+      exitFallbackMs(spring.fast)
+    );
+    return () => clearTimeout(id);
+  }, [open, actionsRef]);
   const shape = useShape();
   const portalContainer = useContext(TooltipPortalContainerContext);
   const hasAmbientProvider = useContext(TooltipGroupContext);
@@ -137,23 +206,26 @@ function Tooltip({
   // Cursor-follow offset from the trigger's center, driven as a motion value
   // so per-move updates skip React re-renders.
   const followOffset = useMotionValue(0);
+  // A force-opened follow-cursor tooltip has no cursor to follow — it rests
+  // centered on the trigger until a real pointer takes over.
+  useEffect(() => {
+    if (forceOpen && followCursor) followOffset.set(0);
+  }, [forceOpen, followCursor, followOffset]);
   const handleFollowMove = (event: React.PointerEvent) => {
     if (!followCursor) return;
     const rect = event.currentTarget.getBoundingClientRect();
     followOffset.set(
-      followCursor === 'y'
+      followCursor === "y"
         ? event.clientY - (rect.top + rect.height / 2)
-        : event.clientX - (rect.left + rect.width / 2),
+        : event.clientX - (rect.left + rect.width / 2)
     );
   };
 
   const tooltip = (
     <TooltipPrimitive.Root
-      open={open}
-      onOpenChange={(v) => {
-        setInternalOpen(v);
-        onOpenChangeProp?.(v);
-      }}
+      open={rootOpen}
+      onOpenChange={onOpenChange}
+      actionsRef={actionsRef}
     >
       {/* An explicit delayDuration overrides the ambient provider's delay;
           left undefined, the trigger inherits it from the provider. */}
@@ -163,23 +235,27 @@ function Tooltip({
         onPointerMove={followCursor ? handleFollowMove : undefined}
       />
       <TooltipPrimitive.Portal container={portalContainer ?? undefined}>
-        <TooltipPrimitive.Positioner side={side} sideOffset={sideOffset} className="z-50">
+        <TooltipPrimitive.Positioner
+          side={side}
+          sideOffset={sideOffset}
+          className={cn("z-50", contentClassName)}
+        >
           <TooltipPrimitive.Popup
             render={(props, state) => {
-              const exiting = state.transitionStatus === 'ending';
+              const exiting = state.transitionStatus === "ending";
               const contentChildren = content;
-              const {
-                style: baseStyle,
-                // motion.div has incompatible drag/animation event signatures —
-                // strip the React-DOM versions so they don't fight motion's own.
-                onDrag: _onDrag,
-                onDragStart: _onDragStart,
-                onDragEnd: _onDragEnd,
-                onAnimationStart: _onAnimationStart,
-                onAnimationEnd: _onAnimationEnd,
-                onAnimationIteration: _onAnimationIteration,
-                ...rest
-              } = props as React.HTMLAttributes<HTMLDivElement>;
+              const { style: baseStyle, ...baseProps } =
+                props as React.HTMLAttributes<HTMLDivElement>;
+              // motion.div has incompatible drag/animation event signatures —
+              // strip the React-DOM versions so they don't fight motion's own.
+              const rest = omit(baseProps, [
+                "onDrag",
+                "onDragStart",
+                "onDragEnd",
+                "onAnimationStart",
+                "onAnimationEnd",
+                "onAnimationIteration",
+              ]);
               return (
                 // Outer wrapper carries Base UI's popup props plus the
                 // cursor-follow motion value; the inner box keeps the
@@ -188,9 +264,9 @@ function Tooltip({
                   {...rest}
                   style={{
                     ...(baseStyle as React.CSSProperties | undefined),
-                    ...(followCursor === 'y'
+                    ...(followCursor === "y"
                       ? { y: followOffset }
-                      : followCursor === 'x'
+                      : followCursor === "x"
                         ? { x: followOffset }
                         : {}),
                   }}
@@ -199,16 +275,26 @@ function Tooltip({
                     className={cn(
                       // Trim recenters the label; the padding bump only applies
                       // where text-box is supported, keeping the same overall
-                      // height (~26px) as untrimmed browsers.
-                      'bg-foreground text-background text-[12px] px-2 py-1',
-                      '[text-box:trim-both_cap_alphabetic] supports-[text-box:trim-both]:py-2',
+                      // height (~24px) as untrimmed browsers.
+                      "bg-foreground text-background text-[length:var(--fs-caption,12px)] leading-[var(--lh-caption,16px)] px-2 py-1",
+                      "[text-box:trim-both_cap_alphabetic] supports-[text-box:trim-both]:py-2",
                       shape.bg,
-                      className,
+                      className
                     )}
-                    style={{ fontVariationSettings: fontWeights.medium }}
+                    style={{ fontVariationSettings: fontWeights.normal }}
                     initial={{ opacity: 0, ...slideOffset }}
-                    animate={exiting ? { opacity: 0, ...slideOffset } : { opacity: 1, x: 0, y: 0 }}
+                    // Both targets name x and y: an exit target without one
+                    // starts a separate, instant animation back to 0 whose
+                    // completion would release the unmount below too early.
+                    animate={
+                      exiting
+                        ? { opacity: 0, x: 0, y: 0, ...slideOffset }
+                        : { opacity: 1, x: 0, y: 0 }
+                    }
                     transition={exiting ? spring.fast.exit : spring.fast}
+                    onAnimationComplete={() => {
+                      if (exiting) actionsRef.current?.unmount();
+                    }}
                   >
                     {contentChildren}
                   </motion.div>
@@ -233,49 +319,5 @@ function Tooltip({
   );
 }
 
-export { Tooltip, TooltipPortalContainer, TooltipProvider as TooltipGroupProvider };
+export { Tooltip, TooltipPortalContainer, TooltipProvider };
 export type { TooltipProps, TooltipProviderProps, TooltipSide };
-
-// Radix-style primitives para pantallas que usan TooltipTrigger/TooltipContent.
-import * as React from 'react';
-import { Tooltip as RadixTooltipPrimitive } from 'radix-ui';
-import { cn as radixCn } from '../../lib/utils';
-
-function LegacyTooltipProvider({
-  delayDuration = 0,
-  ...props
-}: React.ComponentProps<typeof RadixTooltipPrimitive.Provider>) {
-  return <RadixTooltipPrimitive.Provider delayDuration={delayDuration} {...props} />;
-}
-
-const TooltipRoot = RadixTooltipPrimitive.Root;
-const TooltipTrigger = RadixTooltipPrimitive.Trigger;
-
-function TooltipContent({
-  className,
-  sideOffset = 0,
-  children,
-  ...props
-}: React.ComponentProps<typeof RadixTooltipPrimitive.Content>) {
-  return (
-    <RadixTooltipPrimitive.Portal>
-      <RadixTooltipPrimitive.Content
-        sideOffset={sideOffset}
-        className={radixCn(
-          // D-32/UI-32: bg-foreground/text-background en vez de
-          // bg-primary/text-primary-foreground -- brand-soft es
-          // demasiado claro para texto blanco encima (2.69:1, falla AA);
-          // mismo par de alto contraste que ya usa el botón primary.
-          'z-50 overflow-hidden rounded-md bg-foreground px-3 py-1.5 text-xs text-background animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-          className,
-        )}
-        {...props}
-      >
-        {children}
-        <RadixTooltipPrimitive.Arrow className="fill-foreground" />
-      </RadixTooltipPrimitive.Content>
-    </RadixTooltipPrimitive.Portal>
-  );
-}
-
-export { LegacyTooltipProvider as TooltipProvider, TooltipRoot, TooltipTrigger, TooltipContent };

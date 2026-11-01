@@ -1,11 +1,15 @@
-'use client';
+"use client";
 
-import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from 'react';
-import { cn } from './utils';
-import { useSurface, SurfaceProvider } from './surface-context';
-import { surfaceClasses } from './surface-classes';
+import {
+  forwardRef,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+} from "react";
+import { cn } from "./utils";
+import { useSurface, SurfaceProvider } from "./surface-context";
+import { surfaceClasses } from "./surface-classes";
 
-interface ElevatedProps extends ComponentPropsWithoutRef<'div'> {
+interface ElevatedProps extends ComponentPropsWithoutRef<"div"> {
   /**
    * Steps above the current substrate.
    *
@@ -45,8 +49,8 @@ const Elevated = forwardRef<HTMLDivElement, ElevatedProps>(
         </div>
       </SurfaceProvider>
     );
-  },
+  }
 );
-Elevated.displayName = 'Elevated';
+Elevated.displayName = "Elevated";
 
 export { Elevated };

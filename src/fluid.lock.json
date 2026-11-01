@@ -1,0 +1,505 @@
+{
+  "source": "https://www.fluidfunctionalism.com/r/registry.json",
+  "flavor": "base",
+  "syncedAt": "2026-11-01T17:14:08.824Z",
+  "homepage": "https://github.com/mickadesign/fluid-functionalism",
+  "items": [
+    {
+      "name": "surfaces",
+      "url": "https://www.fluidfunctionalism.com/r/surfaces.json",
+      "files": [],
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "tokens",
+      "url": "https://www.fluidfunctionalism.com/r/tokens.json",
+      "files": [],
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "type-scale",
+      "url": "https://www.fluidfunctionalism.com/r/type-scale.json",
+      "files": [],
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "typography",
+      "url": "https://www.fluidfunctionalism.com/r/typography.json",
+      "files": [],
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "utils",
+      "url": "https://www.fluidfunctionalism.com/r/utils.json",
+      "files": [
+        "src/lib/utils.ts"
+      ],
+      "sha256": "48b9e71181e576e0273bd95f7f10a973929b07096c70c794bb54ec07911ef66a"
+    },
+    {
+      "name": "springs",
+      "url": "https://www.fluidfunctionalism.com/r/springs.json",
+      "files": [
+        "src/lib/springs.ts"
+      ],
+      "sha256": "b5d1c7c55ba4b865ac1156effc9ae41e95e4fdd08b42cefcda2854e93b817057"
+    },
+    {
+      "name": "font-weight",
+      "url": "https://www.fluidfunctionalism.com/r/font-weight.json",
+      "files": [
+        "src/lib/font-weight.ts"
+      ],
+      "sha256": "1b290a5eeb29cad9d9c835a26d66e77af8da5e1d412b68da31bd473460631d04"
+    },
+    {
+      "name": "surface-context",
+      "url": "https://www.fluidfunctionalism.com/r/surface-context.json",
+      "files": [
+        "src/lib/surface-context.tsx"
+      ],
+      "sha256": "17352842c40d49bd6a90bf8ca21c789fdde8be8904d9e5d667c71f365c48c120"
+    },
+    {
+      "name": "surface-classes",
+      "url": "https://www.fluidfunctionalism.com/r/surface-classes.json",
+      "files": [
+        "src/lib/surface-classes.ts"
+      ],
+      "sha256": "cb42a715b587950d9adecbb7994f8b67cdea101eed0852a732365549e7cdc896"
+    },
+    {
+      "name": "elevated",
+      "url": "https://www.fluidfunctionalism.com/r/elevated.json",
+      "files": [
+        "src/lib/elevated.tsx"
+      ],
+      "sha256": "1af5d74cdafa5259379abeb07d19949dfa9628ce20c14f10b664c66ee0985793"
+    },
+    {
+      "name": "popup",
+      "url": "https://www.fluidfunctionalism.com/r/popup.json",
+      "files": [
+        "src/lib/popup.ts"
+      ],
+      "sha256": "d6b73fe9ef7a809f49ff6d939f073fafa5b673df817ac64d496846445122a3de"
+    },
+    {
+      "name": "omit",
+      "url": "https://www.fluidfunctionalism.com/r/omit.json",
+      "files": [
+        "src/lib/omit.ts"
+      ],
+      "sha256": "58b67fea6265a2f99cfabb508cae67eecb36587519212ccb7eb4fff214146bbd"
+    },
+    {
+      "name": "shape-context",
+      "url": "https://www.fluidfunctionalism.com/r/shape-context.json",
+      "files": [
+        "src/lib/shape-context.tsx"
+      ],
+      "sha256": "c88e150726e3b3c0b133fa826942c976283f01252162538677db7dd96cb836c3"
+    },
+    {
+      "name": "size-context",
+      "url": "https://www.fluidfunctionalism.com/r/size-context.json",
+      "files": [
+        "src/lib/size-context.tsx",
+        "src/lib/type-scale.ts"
+      ],
+      "sha256": "e3cd7874f4241edb6a9efc5fdc12ac858ff72a22832c2853bf4fdb0b3dbd0226"
+    },
+    {
+      "name": "icon-context",
+      "url": "https://www.fluidfunctionalism.com/r/icon-context.json",
+      "files": [
+        "src/lib/icon-context.tsx"
+      ],
+      "sha256": "60a37ca536e35a338b155e3404aeb4c8ef98d6cbd6f157778c66a6e77580455c"
+    },
+    {
+      "name": "fluid-provider",
+      "url": "https://www.fluidfunctionalism.com/r/fluid-provider.json",
+      "files": [
+        "src/lib/fluid-provider.tsx"
+      ],
+      "sha256": "0648c5e7eaa30096f3b2f2dfda631e020e520cb3586422e6402a9ac83ae8533a"
+    },
+    {
+      "name": "use-fluid-hover",
+      "url": "https://www.fluidfunctionalism.com/r/use-fluid-hover.json",
+      "files": [
+        "src/hooks/use-fluid-hover.ts",
+        "src/components/ui/fluid-hover-highlight.tsx"
+      ],
+      "sha256": "a50b651a2ee6ff6bdecf53a329d8e4ff6e19e843f67611c22a5a30f0b74ca391"
+    },
+    {
+      "name": "use-touch-primary",
+      "url": "https://www.fluidfunctionalism.com/r/use-touch-primary.json",
+      "files": [
+        "src/hooks/use-touch-primary.tsx"
+      ],
+      "sha256": "7f8faf99f09138e096119da2b2792fb542f4560cd02a4a5974ce9dc549b6ac62"
+    },
+    {
+      "name": "use-keyboard-nav-gate",
+      "url": "https://www.fluidfunctionalism.com/r/use-keyboard-nav-gate.json",
+      "files": [
+        "src/hooks/use-keyboard-nav-gate.ts"
+      ],
+      "sha256": "f7edc88b0cead09145e3c81c2fae943fb71c280b89bc49c34ab69b4f4926e976"
+    },
+    {
+      "name": "use-merge-split",
+      "url": "https://www.fluidfunctionalism.com/r/use-merge-split.json",
+      "files": [
+        "src/hooks/use-merge-split.tsx"
+      ],
+      "sha256": "937703fd1097c2e2152701ac692afe813a35393b6b570aa3da4ecfe19783c888"
+    },
+    {
+      "name": "accordion",
+      "url": "https://www.fluidfunctionalism.com/r/base/accordion.json",
+      "files": [
+        "src/components/ui/accordion.tsx"
+      ],
+      "sha256": "7a0fc5fb69b083462590641495bcb03dcace5a567e23bac5a9e05714c6045db8"
+    },
+    {
+      "name": "ask-user-questions",
+      "url": "https://www.fluidfunctionalism.com/r/ask-user-questions.json",
+      "files": [
+        "src/components/ui/ask-user-questions.tsx"
+      ],
+      "sha256": "a89b177956cd56de0e66f1f576dc1f62d7bcbe06c60094574cec0b7721f97072"
+    },
+    {
+      "name": "badge",
+      "url": "https://www.fluidfunctionalism.com/r/badge.json",
+      "files": [
+        "src/components/ui/badge.tsx"
+      ],
+      "sha256": "f8391723b4df3b355e06e88062e868da6e232718cd4cea9f7aa2cb5596f77f04"
+    },
+    {
+      "name": "banner",
+      "url": "https://www.fluidfunctionalism.com/r/banner.json",
+      "files": [
+        "src/components/ui/banner.tsx"
+      ],
+      "sha256": "bb77c3b21e89d45b83d3ca918ad49a5a032741fec3552e0db3e10c05dbf8afc9"
+    },
+    {
+      "name": "button",
+      "url": "https://www.fluidfunctionalism.com/r/base/button.json",
+      "files": [
+        "src/components/ui/button.tsx"
+      ],
+      "sha256": "e88b79a554d7ce4b13c3c26febd657e9a33429585f833928f37a726905b02bb7"
+    },
+    {
+      "name": "dropdown",
+      "url": "https://www.fluidfunctionalism.com/r/base/dropdown.json",
+      "files": [
+        "src/components/ui/dropdown.tsx",
+        "src/components/ui/menu-item.tsx",
+        "src/components/ui/dropdown-search.tsx",
+        "src/components/ui/dropdown-sub.tsx"
+      ],
+      "sha256": "61231930e485c11d09173e0c3751f7d3f7b5efc5293803b4530b69cc4830d019"
+    },
+    {
+      "name": "checkbox-group",
+      "url": "https://www.fluidfunctionalism.com/r/base/checkbox-group.json",
+      "files": [
+        "src/components/ui/checkbox-group.tsx"
+      ],
+      "sha256": "aab4ba08fff8b02fe33c6d2a95f3817f26b4cca12dfaaa9d7c7c0ceb630af5e9"
+    },
+    {
+      "name": "radio-group",
+      "url": "https://www.fluidfunctionalism.com/r/base/radio-group.json",
+      "files": [
+        "src/components/ui/radio-group.tsx"
+      ],
+      "sha256": "c282d45618692107591f252c494f3ef46e55eee89bdb9a28e9cf18466a234127"
+    },
+    {
+      "name": "dialog",
+      "url": "https://www.fluidfunctionalism.com/r/base/dialog.json",
+      "files": [
+        "src/components/ui/dialog.tsx"
+      ],
+      "sha256": "a94b7f4603ea8eda02955fb0c33f3c5901d78bf16d294f71d40c7c2dfbd54ea2"
+    },
+    {
+      "name": "mobile-drawer",
+      "url": "https://www.fluidfunctionalism.com/r/base/mobile-drawer.json",
+      "files": [
+        "src/components/ui/mobile-drawer.tsx"
+      ],
+      "sha256": "5730a61154a2a1862acf5e8755b8437efcd1144390196a3c193630db60ffffe3"
+    },
+    {
+      "name": "input-copy",
+      "url": "https://www.fluidfunctionalism.com/r/input-copy.json",
+      "files": [
+        "src/components/ui/input-copy.tsx"
+      ],
+      "sha256": "1308537c473bd2d0ce0621c377da34e0da24e8d84221e0416cf526a228de0798"
+    },
+    {
+      "name": "input-group",
+      "url": "https://www.fluidfunctionalism.com/r/input-group.json",
+      "files": [
+        "src/components/ui/input-group.tsx"
+      ],
+      "sha256": "72997af347ce0164d7deca553942ed5c91298063b8ae01cb33cff0b9ea07f46a"
+    },
+    {
+      "name": "input-message",
+      "url": "https://www.fluidfunctionalism.com/r/input-message.json",
+      "files": [
+        "src/components/ui/input-message.tsx"
+      ],
+      "sha256": "5fe80b920d7de9b5e8672a1f0ed6c2fc756919d73c987a9b590467c202cfb569"
+    },
+    {
+      "name": "file-thumbnail",
+      "url": "https://www.fluidfunctionalism.com/r/file-thumbnail.json",
+      "files": [
+        "src/components/ui/file-thumbnail.tsx"
+      ],
+      "sha256": "0f205ea8aa9afcfc7abb7d8ef7b031e98983aec5b9e7c42b5c33e5014498ff98"
+    },
+    {
+      "name": "queued-stack",
+      "url": "https://www.fluidfunctionalism.com/r/queued-stack.json",
+      "files": [
+        "src/components/queued-stack.tsx"
+      ],
+      "sha256": "8e391d47b02a2809ed9c314911ffb7b5b32986bc218ec034e3f8d52a3dc642f1"
+    },
+    {
+      "name": "chat-message",
+      "url": "https://www.fluidfunctionalism.com/r/chat-message.json",
+      "files": [
+        "src/components/ui/chat-message.tsx"
+      ],
+      "sha256": "c0b9ee7dad22a7d97b26d121f3eeabbc7846a34cd44ca0fd628f521adf578e03"
+    },
+    {
+      "name": "tabs",
+      "url": "https://www.fluidfunctionalism.com/r/base/tabs.json",
+      "files": [
+        "src/components/ui/tabs.tsx"
+      ],
+      "sha256": "93347303a1f153b08dcf60f84e331e849e055b4c05c87d97faed3839e814dbf9"
+    },
+    {
+      "name": "switch",
+      "url": "https://www.fluidfunctionalism.com/r/base/switch.json",
+      "files": [
+        "src/components/ui/switch.tsx"
+      ],
+      "sha256": "ab8875efb4bcee9293ce1ea9c870cbe966022d0683932002bab038b57e284ec7"
+    },
+    {
+      "name": "carousel-dots",
+      "url": "https://www.fluidfunctionalism.com/r/carousel-dots.json",
+      "files": [
+        "src/components/ui/carousel-dots.tsx"
+      ],
+      "sha256": "c86d9801c9c3886a2ae1e48c8af778fecd6d082636843d993bac5450161c201f"
+    },
+    {
+      "name": "table",
+      "url": "https://www.fluidfunctionalism.com/r/table.json",
+      "files": [
+        "src/components/ui/table.tsx"
+      ],
+      "sha256": "bdbd42305cf690faec18a3ffb2d1da41d440c0383bc2a5063b4f8c6dca301bce"
+    },
+    {
+      "name": "card",
+      "url": "https://www.fluidfunctionalism.com/r/card.json",
+      "files": [
+        "src/components/ui/card.tsx"
+      ],
+      "sha256": "0a88872de3d71c62a177bf20484af34a3c1bb93805770ec6940256728a5f197f"
+    },
+    {
+      "name": "sidebar",
+      "url": "https://www.fluidfunctionalism.com/r/base/sidebar.json",
+      "files": [
+        "src/components/ui/sidebar.tsx",
+        "src/components/ui/sidebar-core.tsx",
+        "src/components/ui/sidebar-menu.tsx"
+      ],
+      "sha256": "87b85b06a21cb55450bc4065b2413c035485861cbb0bb9089be9fd1f5c972bc6"
+    },
+    {
+      "name": "sidebar-menu-grid",
+      "url": "https://www.fluidfunctionalism.com/r/sidebar-menu-grid.json",
+      "files": [
+        "src/lib/sidebar-menu-grid.ts"
+      ],
+      "sha256": "a02cc9faf4b9dbdbf1f0829f3ce758c3f938395897eca235b4e28a6f2f3e8ceb"
+    },
+    {
+      "name": "sidebar-workspace-header",
+      "url": "https://www.fluidfunctionalism.com/r/sidebar-workspace-header.json",
+      "files": [
+        "src/components/sidebar-app/workspace-header.tsx"
+      ],
+      "sha256": "295a9dff2e9b30360df3010d1f48eee6d12a9e8b558eddc59aaa9762117e1361"
+    },
+    {
+      "name": "sidebar-user-footer",
+      "url": "https://www.fluidfunctionalism.com/r/sidebar-user-footer.json",
+      "files": [
+        "src/components/sidebar-app/user-footer.tsx"
+      ],
+      "sha256": "ce8f46f5ca313283d4a843108550ac38eb693a2726c4f1b1968c62cdd0eff7cf"
+    },
+    {
+      "name": "sidebar-search-field",
+      "url": "https://www.fluidfunctionalism.com/r/sidebar-search-field.json",
+      "files": [
+        "src/components/sidebar-app/search-field.tsx"
+      ],
+      "sha256": "36d20f6956bd26ec0084b98821a94b1de60dea71eb35b0edaec418d49f4006ee"
+    },
+    {
+      "name": "sidebar-inset-topbar",
+      "url": "https://www.fluidfunctionalism.com/r/sidebar-inset-topbar.json",
+      "files": [
+        "src/components/sidebar-app/inset-topbar.tsx"
+      ],
+      "sha256": "5bc41ba61c5216b347cb31505ecf31dbcd15bcc541fd2c858f552ff1d2a8412b"
+    },
+    {
+      "name": "sidebar-app",
+      "url": "https://www.fluidfunctionalism.com/r/sidebar-app.json",
+      "files": [
+        "src/components/sidebar-app/app-sidebar.tsx",
+        "src/components/sidebar-app/nav-data.ts"
+      ],
+      "sha256": "b298071549f6c1fa0bd65d4d985d6e2d097e68c6a205141f61c313a0d7b69015"
+    },
+    {
+      "name": "dialog-sidebar",
+      "url": "https://www.fluidfunctionalism.com/r/dialog-sidebar.json",
+      "files": [
+        "src/components/dialog-sidebar/settings-dialog.tsx"
+      ],
+      "sha256": "9573437d2f75a9f3bf1427e4a47e0a27c52b37297f52053c441c569b4d83c63a"
+    },
+    {
+      "name": "slider",
+      "url": "https://www.fluidfunctionalism.com/r/base/slider.json",
+      "files": [
+        "src/components/ui/slider.tsx"
+      ],
+      "sha256": "3969597ab3c48a973a704167537b5b6f2840090e66ce91231241853464c8a5b1"
+    },
+    {
+      "name": "thinking-indicator",
+      "url": "https://www.fluidfunctionalism.com/r/thinking-indicator.json",
+      "files": [
+        "src/components/ui/thinking-indicator.tsx"
+      ],
+      "sha256": "4d872bf394a27217001325454aa8e6c3a7502189290f34d55e3d3c47e4c989f9"
+    },
+    {
+      "name": "reveal",
+      "url": "https://www.fluidfunctionalism.com/r/reveal.json",
+      "files": [],
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "scroll-area",
+      "url": "https://www.fluidfunctionalism.com/r/base/scroll-area.json",
+      "files": [
+        "src/components/ui/scroll-area.tsx"
+      ],
+      "sha256": "15560f1bd7be61e3be9d9113e883f5d76b447c1faa5720e0bc429481a109111d"
+    },
+    {
+      "name": "select",
+      "url": "https://www.fluidfunctionalism.com/r/base/select.json",
+      "files": [
+        "src/components/ui/select.tsx"
+      ],
+      "sha256": "57220f942e21af7a9f7f05cba9c28450e327ee972fc67ee7342b63e5e69e8e7a"
+    },
+    {
+      "name": "combobox",
+      "url": "https://www.fluidfunctionalism.com/r/base/combobox.json",
+      "files": [
+        "src/components/ui/combobox.tsx"
+      ],
+      "sha256": "034edca0223c77e753312afdf885a72413e48e0b78e04b02dd1c01b8e47e72f5"
+    },
+    {
+      "name": "command-menu",
+      "url": "https://www.fluidfunctionalism.com/r/command-menu.json",
+      "files": [
+        "src/components/ui/command-menu.tsx"
+      ],
+      "sha256": "d87815525acae44daff185cf47609a2fa31e847db88a18e85ebda20791d1313e"
+    },
+    {
+      "name": "calendar",
+      "url": "https://www.fluidfunctionalism.com/r/calendar.json",
+      "files": [
+        "src/components/ui/calendar.tsx"
+      ],
+      "sha256": "5c4f7babd489706392b4bbe6c8599c1ab9413b44254564b3408588b28ad7117b"
+    },
+    {
+      "name": "date-picker",
+      "url": "https://www.fluidfunctionalism.com/r/base/date-picker.json",
+      "files": [
+        "src/components/ui/date-picker.tsx",
+        "src/components/ui/date-picker-core.tsx"
+      ],
+      "sha256": "8b7142e1bafc75314b3122175f1f14c1b89a2f9bbbab0f5f711169ecc81eb3a9"
+    },
+    {
+      "name": "tooltip",
+      "url": "https://www.fluidfunctionalism.com/r/base/tooltip.json",
+      "files": [
+        "src/components/ui/tooltip.tsx"
+      ],
+      "sha256": "12bc9d469b793455d0b9494e5bf8529e450b145421e398e382692b681323e984"
+    },
+    {
+      "name": "thinking-steps",
+      "url": "https://www.fluidfunctionalism.com/r/base/thinking-steps.json",
+      "files": [
+        "src/components/ui/thinking-steps.tsx"
+      ],
+      "sha256": "669ecd4278932bece171ed443019b83334912dc3d7b3250bca23fd58dce817be"
+    },
+    {
+      "name": "color-picker",
+      "url": "https://www.fluidfunctionalism.com/r/color-picker.json",
+      "files": [
+        "src/components/ui/color-picker.tsx"
+      ],
+      "sha256": "870ee91f1db53c3f021f92b2bca5791dc1d12ffe5866899e5b65b1941079aa3b"
+    }
+  ],
+  "dependencies": [
+    "@base-ui/react@^1.9.0",
+    "@daypicker/react@~10.0.2",
+    "class-variance-authority",
+    "clsx",
+    "lucide-react",
+    "motion",
+    "pdfjs-dist",
+    "tailwind-merge"
+  ]
+}

@@ -1,6 +1,6 @@
 # Ixchel
 
-Librería de componentes React independiente: primitivos, tokens y shells.
+Librería de componentes React basada en [Fluid Functionalism](https://www.fluidfunctionalism.com) (sabor Base UI).
 Licencia MIT.
 
 ```bash
@@ -8,7 +8,7 @@ pnpm add @alquimias/ixchel
 ```
 
 ```tsx
-import { Button, FormShell } from '@alquimias/ixchel';
+import { Button, FluidProvider } from '@alquimias/ixchel';
 ```
 
 ```css
@@ -16,50 +16,25 @@ import { Button, FormShell } from '@alquimias/ixchel';
 @import '@alquimias/ixchel/styles.css';
 ```
 
-React 19 es `peerDependency`. Si Tailwind no ve las clases, agregá `@source` apuntando a `node_modules/@alquimias/ixchel/src`. `Button` y `EmptyState` aceptan `to`; sin `UiLinkProvider` renderizan un `<a>`.
-
-## Colores
-
-La paleta pública son cinco variables CSS. BYTE es el default; el resto del tema (`primary`, `muted`, bordes, charts) se deriva de ellas.
-
-```css
-@import 'tailwindcss';
-@import '@alquimias/ixchel/styles.css';
-
-:root {
-  --color-brand-black: #0f172a;
-  --color-brand-lavender: #94a3b8;
-  --color-brand-soft: #2563eb;
-  --color-brand-peri: #60a5fa;
-  --color-brand-ghost: #f8fafc;
-}
-```
-
-En runtime, el mismo override con `ColorThemeProvider` (aplica en `document.documentElement` para que Dialog/Select hereden el tema; `scoped` lo limita a un wrapper):
+React 19 es `peerDependency`. Envuelve la app en `FluidProvider` para reduced motion del SO, radio (rounded/pill), tamaño (default/compact) e iconos.
 
 ```tsx
-import { ColorThemeProvider } from '@alquimias/ixchel';
+import { FluidProvider } from '@alquimias/ixchel';
 
-<ColorThemeProvider
-  colors={{
-    black: '#0f172a',
-    lavender: '#94a3b8',
-    soft: '#2563eb',
-    peri: '#60a5fa',
-    ghost: '#f8fafc',
-  }}
->
+<FluidProvider shape="rounded" size="default">
   <App />
-</ColorThemeProvider>
+</FluidProvider>
 ```
 
-El manifiesto de este repo se llama `@erp/ui` para el workspace de [alquimias/erp](https://github.com/alquimias/erp), que la consume como submódulo `packages/ui`. En npmjs y GitHub Packages se publica como **`@alquimias/ixchel`**.
+Carga Inter con el eje `opsz` si querés que el peso de las etiquetas no mueva el layout.
 
-También se puede instalar desde git:
+El manifiesto de este repo se llama `@erp/ui` para el workspace de [alquimias/erp](https://github.com/alquimias/erp). En npmjs y GitHub Packages se publica como **`@alquimias/ixchel`**.
 
-```bash
-pnpm add github:alquimias/erp-ui
-```
+## Catálogo
+
+Primitivos y sistemas de Fluid Functionalism: accordion, badge, banner, button, calendar, card, carousel-dots, chat-message, checkbox-group, color-picker, combobox, command-menu, date-picker, dialog, dropdown, file-thumbnail, input-copy, input-group, input-message, mobile-drawer, radio-group, scroll-area, select, sidebar, slider, switch, table, tabs, thinking-indicator, thinking-steps, tooltip, y los bloques `AppSidebar`, `SettingsDialog` y `QueuedStack`.
+
+También se reexportan `FluidProvider`, `spring`, `useFluidHover`, `ShapeProvider`, `SizeProvider` e `IconProvider`.
 
 ## Desarrollo
 
@@ -74,22 +49,19 @@ pnpm build
 
 Storybook escucha en el puerto 6006.
 
-Dentro del monorepo del ERP:
+Para volver a vendor el registry de Fluid Functionalism (Base UI):
 
 ```bash
-git clone --recurse-submodules git@github.com:alquimias/erp.git
-cd erp
-pnpm install
-pnpm --filter @erp/ui storybook
+pnpm sync:fluid
 ```
+
+Eso reescribe `src/components`, `src/lib`, `src/hooks` y `src/styles/theme.css` desde `https://www.fluidfunctionalism.com/r`. Los imports `@/` quedan en rutas relativas para que el paquete se consuma en fuente.
 
 ## Pipelines
 
-Los workflows viven en este repositorio.
-
 | Workflow | Cuándo corre | Qué produce |
 | --- | --- | --- |
-| CI | push y pull request a `main` | lint, pruebas unitarias y typecheck |
+| CI | push a `main` o `feat/v1-fluid`, y pull request a `main` | lint, pruebas unitarias y typecheck |
 | Package | push a `main`, tag `v*` o ejecución manual | tarball; publicación pública en npmjs.org (`NPM_TOKEN`) y GitHub Packages |
 
-Un push a `main` publica `0.0.1-sha<12>`. Un tag `v*` publica esa versión, deja el tarball como artefacto y abre un GitHub Release. `pnpm test:storybook` sigue siendo local: necesita Playwright.
+Un push a `main` publica `0.0.1-sha<12>`. Un tag `v*` publica esa versión. `pnpm test:storybook` sigue siendo local: necesita Playwright.

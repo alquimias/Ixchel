@@ -3,33 +3,18 @@ import { Badge } from './badge';
 
 const meta = {
   component: Badge,
-  tags: ['autodocs', 'ai-generated'],
+  tags: ['autodocs'],
   args: {
-    children: 'Borrador',
+    children: 'New',
+    color: 'accent',
   },
 } satisfies Meta<typeof Badge>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Solid: Story = {};
 
-export const Success: Story = {
-  args: { variant: 'success', children: 'Vigente' },
-};
-
-export const Warning: Story = {
-  args: { variant: 'warning', children: 'Por vencer' },
-};
-
-export const Destructive: Story = {
-  args: { variant: 'destructive', children: 'Vencido' },
-};
-
-export const Info: Story = {
-  args: { variant: 'info', children: 'En revisión' },
-};
-
-export const Outline: Story = {
-  args: { variant: 'outline', children: 'Opcional' },
+export const Dot: Story = {
+  args: { variant: 'dot', color: 'green', children: 'Active' },
 };

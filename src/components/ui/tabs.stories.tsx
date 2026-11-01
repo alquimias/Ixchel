@@ -1,40 +1,38 @@
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect } from 'storybook/test';
-import { TabItem, TabPanel, Tabs, TabsList } from './tabs';
+import { Tabs, TabsItem, TabsPanel } from './tabs';
 
 const meta = {
   component: Tabs,
-  tags: ['autodocs', 'ai-generated'],
+  tags: ['autodocs'],
 } satisfies Meta<typeof Tabs>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-function TabsExample() {
+function TabsDemo() {
+  const [selectedIndex, setSelectedIndex] = useState(0);
   return (
-    <Tabs defaultValue="general">
-      <TabsList>
-        <TabItem value="general" label="General" />
-        <TabItem value="historial" label="Historial" />
-      </TabsList>
-      <TabPanel value="general">Datos de la sede</TabPanel>
-      <TabPanel value="historial">Sin registros anteriores</TabPanel>
-    </Tabs>
+    <div className="space-y-4">
+      <Tabs selectedIndex={selectedIndex} onSelect={setSelectedIndex} idPrefix="demo">
+        <TabsItem index={0} label="General" />
+        <TabsItem index={1} label="Members" />
+      </Tabs>
+      <TabsPanel index={0} selectedIndex={selectedIndex} idPrefix="demo">
+        Workspace defaults.
+      </TabsPanel>
+      <TabsPanel index={1} selectedIndex={selectedIndex} idPrefix="demo">
+        People with access.
+      </TabsPanel>
+    </div>
   );
 }
 
 export const Default: Story = {
-  render: () => <TabsExample />,
-};
-
-export const SwitchTab: Story = {
-  render: () => <TabsExample />,
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('tab', { name: 'Historial' }));
-    await expect(canvas.getByRole('tab', { name: 'Historial' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    await expect(canvas.getByText('Sin registros anteriores')).toBeVisible();
+  args: {
+    selectedIndex: 0,
+    onSelect: () => {},
+    children: null,
   },
+  render: () => <TabsDemo />,
 };

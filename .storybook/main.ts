@@ -20,15 +20,14 @@ const config: StorybookConfig = {
       plugins: [tailwindcss()],
       optimizeDeps: {
         include: [
+          '@base-ui/react/button',
           '@base-ui/react/dialog',
-          '@base-ui/react/field',
           '@base-ui/react/menu',
           '@base-ui/react/scroll-area',
           '@base-ui/react/select',
           '@base-ui/react/tooltip',
-          'border-beam',
-          'react-hook-form',
-          'recharts',
+          'motion',
+          'motion/react',
         ],
       },
     });

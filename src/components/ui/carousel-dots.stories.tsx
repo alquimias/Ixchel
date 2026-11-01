@@ -1,51 +1,21 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect } from 'storybook/test';
-import { CarouselDots, type CarouselDotsProps } from './carousel-dots';
+import { CarouselDots } from './carousel-dots';
 
 const meta = {
   component: CarouselDots,
-  tags: ['autodocs', 'ai-generated'],
-  args: {
-    count: 3,
-    value: 0,
-  },
+  tags: ['autodocs'],
 } satisfies Meta<typeof CarouselDots>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-function DotsPlayground({
-  value: initialValue,
-  ...props
-}: CarouselDotsProps) {
-  const [value, setValue] = useState(initialValue);
-  return (
-    <CarouselDots
-      {...props}
-      value={value}
-      onValueChange={setValue}
-      getLabel={(index) => `Ir al paso ${index + 1}`}
-      aria-label="Pasos"
-    />
-  );
+function DotsDemo() {
+  const [value, setValue] = useState(1);
+  return <CarouselDots count={4} value={value} onValueChange={setValue} />;
 }
 
 export const Default: Story = {
-  render: (args) => <DotsPlayground {...args} />,
-  play: async ({ canvas, userEvent }) => {
-    const second = canvas.getByRole('button', { name: 'Ir al paso 2' });
-    await userEvent.click(second);
-    await expect(second).toHaveAttribute('aria-current', 'true');
-  },
-};
-
-export const Autoplay: Story = {
-  args: { autoplay: { duration: 3000 } },
-  render: (args) => <DotsPlayground {...args} />,
-};
-
-export const Alert: Story = {
-  args: { count: 4, value: 1, alertIndex: 2, alertPulse: 1 },
-  render: (args) => <DotsPlayground {...args} />,
+  args: { count: 4, value: 0 },
+  render: () => <DotsDemo />,
 };

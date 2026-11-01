@@ -3,31 +3,36 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 
 const meta = {
   component: Table,
-  tags: ['autodocs', 'ai-generated'],
+  tags: ['autodocs'],
 } satisfies Meta<typeof Table>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  render: () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nombre</TableHead>
-          <TableHead>Cargo</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        <TableRow>
-          <TableCell>Ana Gómez</TableCell>
-          <TableCell>Inspectora</TableCell>
-        </TableRow>
-        <TableRow>
-          <TableCell>Luis Pérez</TableCell>
-          <TableCell>Auxiliar</TableCell>
-        </TableRow>
-      </TableBody>
-    </Table>
-  ),
+  args: {
+    children: (
+      <>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow index={0}>
+            <TableCell>Alice</TableCell>
+            <TableCell>Engineer</TableCell>
+            <TableCell>Active</TableCell>
+          </TableRow>
+          <TableRow index={1}>
+            <TableCell>Bob</TableCell>
+            <TableCell>Designer</TableCell>
+            <TableCell>Away</TableCell>
+          </TableRow>
+        </TableBody>
+      </>
+    ),
+  },
 };

@@ -1,12 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect } from 'storybook/test';
 import { Button } from './button';
 
 const meta = {
   component: Button,
-  tags: ['autodocs', 'ai-generated'],
+  tags: ['autodocs'],
   args: {
-    children: 'Guardar',
+    children: 'Save',
   },
 } satisfies Meta<typeof Button>;
 
@@ -16,19 +15,15 @@ type Story = StoryObj<typeof meta>;
 export const Primary: Story = {};
 
 export const Secondary: Story = {
-  args: { variant: 'secondary', children: 'Cancelar' },
+  args: { variant: 'secondary', children: 'Cancel' },
 };
 
 export const Tertiary: Story = {
-  args: { variant: 'tertiary', children: 'Filtrar' },
+  args: { variant: 'tertiary', children: 'Filter' },
 };
 
 export const Ghost: Story = {
-  args: { variant: 'ghost', children: 'Omitir' },
-};
-
-export const Destructive: Story = {
-  args: { variant: 'destructive', children: 'Eliminar' },
+  args: { variant: 'ghost', children: 'Skip' },
 };
 
 export const Loading: Story = {
@@ -37,17 +32,4 @@ export const Loading: Story = {
 
 export const Disabled: Story = {
   args: { disabled: true },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button', { name: 'Guardar' })).toBeDisabled();
-  },
-};
-
-export const CssCheck: Story = {
-  play: async ({ canvas }) => {
-    const button = canvas.getByRole('button', { name: 'Guardar' });
-    const fill = button.querySelector('[aria-hidden]');
-    await expect(fill).not.toBeNull();
-    // El fondo primary resuelve --foreground → --color-brand-black (#000807).
-    await expect(getComputedStyle(fill as Element).backgroundColor).toBe('rgb(0, 8, 7)');
-  },
 };

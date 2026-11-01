@@ -4,29 +4,24 @@ import { InputField, InputGroup } from './input-group';
 
 const meta = {
   component: InputGroup,
-  tags: ['autodocs', 'ai-generated'],
+  tags: ['autodocs'],
 } satisfies Meta<typeof InputGroup>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-function Fields({ error }: { error?: string }) {
-  const [nombre, setNombre] = useState('Ana Gómez');
-  const [correo, setCorreo] = useState('');
+function InputGroupDemo() {
+  const [name, setName] = useState('Ixchel');
+  const [email, setEmail] = useState('you@example.com');
   return (
-    <InputGroup className="max-w-sm">
-      <InputField label="Nombre" value={nombre} onChange={setNombre} />
-      <InputField label="Correo" type="email" value={correo} onChange={setCorreo} error={error} />
+    <InputGroup>
+      <InputField index={0} label="Name" value={name} onChange={setName} />
+      <InputField index={1} label="Email" value={email} onChange={setEmail} />
     </InputGroup>
   );
 }
 
 export const Default: Story = {
   args: { children: null },
-  render: () => <Fields />,
-};
-
-export const WithError: Story = {
-  args: { children: null },
-  render: () => <Fields error="Ingresa un correo válido" />,
+  render: () => <InputGroupDemo />,
 };

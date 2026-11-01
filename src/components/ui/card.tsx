@@ -13,6 +13,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
+import Link from "../../lib/next-link";
 import { cn } from "../../lib/utils";
 import { fontWeights } from "../../lib/font-weight";
 import { useShape } from "../../lib/shape-context";
@@ -20,7 +21,6 @@ import { SizeProvider, useSize, typeClass, type SizeVariant } from "../../lib/si
 import { useIcons, type IconComponent } from "../../lib/icon-context";
 import { useFluidHover, useRegisterFluidHoverItem } from "../../hooks/use-fluid-hover";
 import { FluidHoverHighlight } from "./fluid-hover-highlight";
-import { UiLink } from "../../link";
 
 // ---------------------------------------------------------------------------
 // Card is shadcn/ui's compositional card — the same parts and `data-slot`
@@ -121,12 +121,9 @@ const CardGroup = forwardRef<HTMLDivElement, CardGroupProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const shape = useShape();
 
-    // >1 column wraps into a grid, where nearest-item must be resolved in two
-    // dimensions; a single column is a plain vertical list.
-    const axis = columns > 1 ? "xy" : "y";
-    // A card grid has generous whitespace, so a gap click only routes when it
-    // lands within a hand's width of the highlighted card.
-    const hover = useFluidHover(containerRef, { axis, gapClick: { maxDistance: 16 } });
+    // The card under the pointer lights, in a column or a grid alike; the
+    // gaps between cards light nothing, so a click there lands nowhere.
+    const hover = useFluidHover(containerRef);
     const {
       activeIndex,
       handlers,
@@ -243,8 +240,8 @@ interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, "onClick"> {
   onDismiss?: () => void;
   /** Pins the card to one step of the size ladder (see /docs/sizes) — compact
    *  tightens type and padding. Omitted, it follows the surrounding
-   *  SizeProvider. `sm` is a local alias of `compact` (same as Button). */
-  size?: SizeVariant | "sm";
+   *  SizeProvider. */
+  size?: SizeVariant;
   /** Injected by CardGroup — do not set by hand. */
   index?: number;
 }
@@ -271,10 +268,9 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
   ) => {
     const internalRef = useRef<HTMLDivElement>(null);
     const shape = useShape();
-    const resolvedSize: SizeVariant | undefined = size === "sm" ? "compact" : size;
     // Resolve against the explicit prop first so this card's own padding and
     // gaps agree with the SizeProvider it renders for its children.
-    const sizeClasses = useSize(resolvedSize);
+    const sizeClasses = useSize(size);
     const compact = sizeClasses.variant === "compact";
     const group = useContext(CardGroupContext);
     const icons = useIcons();
@@ -350,8 +346,8 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     // activated by keyboard (pointer-events-none only blocks the mouse).
     const overlay = clickable && !disabled ? (
       href ? (
-        <UiLink
-          to={href}
+        <Link
+          href={href}
           onClick={onClick}
           target={external ? "_blank" : undefined}
           rel={external ? "noopener noreferrer" : undefined}
@@ -513,7 +509,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
 
     // A size prop pins the card (and everything ladder-aware inside it) to one
     // ladder step; the parts read the context.
-    return resolvedSize ? <SizeProvider size={resolvedSize}>{card}</SizeProvider> : card;
+    return size ? <SizeProvider size={size}>{card}</SizeProvider> : card;
   }
 );
 
@@ -555,28 +551,6 @@ CardHeader.displayName = "CardHeader";
 
 // ── CardTitle ────────────────────────────────────────────
 
-/** Invisible width sizer: CSS `content` so Testing Library's getByText
- *  does not match a second copy of the title (the ghost is aria-hidden,
- *  but getByText still sees DOM text nodes). */
-function toWidthGhost(node: ReactNode): ReactNode {
-  if (node == null || typeof node === "boolean") return node;
-  if (typeof node === "string" || typeof node === "number") {
-    return (
-      <span
-        data-text={String(node)}
-        className="before:content-[attr(data-text)]"
-      />
-    );
-  }
-  if (Array.isArray(node)) {
-    return Children.map(node, toWidthGhost);
-  }
-  if (isValidElement<{ children?: ReactNode }>(node)) {
-    return cloneElement(node, undefined, toWidthGhost(node.props.children));
-  }
-  return node;
-}
-
 const CardTitle = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>(
   ({ className, children, ...props }, ref) => {
     const { emphasized, orientation } = useContext(CardContext);
@@ -608,15 +582,15 @@ const CardTitle = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>(
         {...props}
       >
         <span
-          className={cn("col-start-1 row-start-1 invisible min-w-0 overflow-hidden text-ellipsis", trim)}
+          className={cn("col-start-1 row-start-1 invisible min-w-0 overflow-x-clip text-ellipsis", trim)}
           style={{ fontVariationSettings: fontWeights.semibold }}
           aria-hidden="true"
         >
-          {toWidthGhost(children)}
+          {children}
         </span>
         <span
           className={cn(
-            "col-start-1 row-start-1 min-w-0 overflow-hidden text-ellipsis text-foreground transition-[font-variation-settings] duration-80",
+            "col-start-1 row-start-1 min-w-0 overflow-x-clip text-ellipsis text-foreground transition-[font-variation-settings] duration-80",
             trim
           )}
           style={{
@@ -771,7 +745,7 @@ function CardMedia({ logo, logoAlt, icon: Icon, size = 22, className }: CardMedi
         {logos.map((src, i) => (
           <span key={i} className="inline-flex items-center gap-1.5">
             {i > 0 && <span aria-hidden className="w-2 h-px bg-border" />}
-            {/* Decorative logo; alt comes from logoAlt. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={src}
               alt={logoAlt ?? ""}
@@ -823,6 +797,7 @@ interface CardImageProps {
 function CardImage({ src, alt, className }: CardImageProps) {
   const { orientation } = useContext(CardContext);
   return (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={src}
       alt={alt ?? ""}
@@ -1002,8 +977,8 @@ function CardButton({
 
   if (href) {
     return (
-      <UiLink
-        to={href}
+      <Link
+        href={href}
         onClick={onClick}
         target={external ? "_blank" : undefined}
         rel={external ? "noopener noreferrer" : undefined}
@@ -1011,7 +986,7 @@ function CardButton({
         style={{ fontVariationSettings: fontWeights.normal }}
       >
         {inner}
-      </UiLink>
+      </Link>
     );
   }
 

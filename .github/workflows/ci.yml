@@ -1,4 +1,5 @@
-# Verificación del paquete @erp/ui en alquimias/erp-ui.
+# Verificación de Ixchel (@erp/ui en el manifiesto; se publica como
+# @alquimias/ixchel) en alquimias/erp-ui.
 # No depende del monorepo: instala, lintea, prueba y typecheckea este repo.
 name: CI
 

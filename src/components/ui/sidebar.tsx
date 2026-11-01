@@ -20,7 +20,9 @@ import { surfaceClasses } from "../../lib/surface-classes";
 import { ScrollArea } from "./scroll-area";
 import {
   useSidebar,
+  useIconCollapsed,
   SidebarShell,
+  SidebarCollapsibleScope,
   type SidebarSide,
   type SidebarVariant,
   type SidebarCollapsible,
@@ -189,7 +191,8 @@ export interface SidebarProps
   > {
   side?: SidebarSide;
   variant?: SidebarVariant;
-  /** `"icon"` collapse is intentionally not supported — offcanvas or none. */
+  /** Desktop collapse. `"icon"` keeps a 3rem glyph rail; `"offcanvas"`
+   *  slides the column away (and can peek). `"none"` pins it open. */
   collapsible?: SidebarCollapsible;
   /** The `sidebar` variant's inner-edge border. Default true. */
   bordered?: boolean;
@@ -247,16 +250,27 @@ const Sidebar = forwardRef<HTMLDivElement, SidebarProps>(
     // the instant the window shrank. The sheet mounts alongside it below the
     // breakpoint; the hidden shell costs nothing visible (display: none).
     return (
-      <>
+      <SidebarCollapsibleScope collapsible={collapsible}>
         {isMobile && (
           <SidebarSheet side={side} open={openMobile} onClose={() => setOpenMobile(false)}>
             {children}
           </SidebarSheet>
         )}
-        <SidebarShell ref={ref} side={side} variant={variant} bordered={bordered} rail={rail} railTooltipOpen={railTooltipOpen} className={className} style={style} {...props}>
+        <SidebarShell
+          ref={ref}
+          side={side}
+          variant={variant}
+          bordered={bordered}
+          collapsible={collapsible}
+          rail={rail}
+          railTooltipOpen={railTooltipOpen}
+          className={className}
+          style={style}
+          {...props}
+        >
           {children}
         </SidebarShell>
-      </>
+      </SidebarCollapsibleScope>
     );
   }
 );
@@ -271,6 +285,7 @@ export interface SidebarContentProps extends HTMLAttributes<HTMLDivElement> {
 const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
   ({ className, viewportClassName, children, ...props }, ref) => {
     const { isMobile } = useSidebar();
+    const iconCollapsed = useIconCollapsed();
 
     // Inside the mobile sheet, the sheet's flex column owns layout and this
     // region scrolls natively — a nested ScrollArea would double-scroll. The
@@ -284,6 +299,34 @@ const SidebarContent = forwardRef<HTMLDivElement, SidebarContentProps>(
             ref={ref}
             data-sidebar="content"
             className={cn("scroll-fade flex min-h-0 w-full flex-1 flex-col overflow-y-auto", className)}
+            {...props}
+          >
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    // Icon rail: Linux/GTK classic scrollbars still eat ~12–16px even with
+    // scrollbar-width:none, which shifts the 3rem column off the status-bar
+    // tenant rule. Park the bar in a negative-margin strip the parent clips
+    // away so wheel-scroll still works. ScrollArea's overlay bar is skipped
+    // for the same reason.
+    if (iconCollapsed) {
+      return (
+        <div
+          data-slot="sidebar-content-clip"
+          className={cn("flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden", className)}
+        >
+          <div
+            ref={ref}
+            data-sidebar="content"
+            className={cn(
+              "flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain",
+              "[scrollbar-width:none] [-ms-overflow-style:none]",
+              "-mr-5 pr-5",
+              viewportClassName
+            )}
             {...props}
           >
             {children}
@@ -313,6 +356,7 @@ export { Sidebar, SidebarContent };
 export {
   SidebarProvider,
   useSidebar,
+  useIconCollapsed,
   SidebarTrigger,
   SidebarRail,
   SidebarInset,
@@ -329,6 +373,7 @@ export {
   SIDEBAR_COOKIE_MAX_AGE,
   SIDEBAR_WIDTH,
   SIDEBAR_WIDTH_MOBILE,
+  SIDEBAR_WIDTH_ICON,
   SIDEBAR_KEYBOARD_SHORTCUT,
   SIDEBAR_KEYBOARD_SHORTCUT_RIGHT,
   SIDEBAR_MIN_WIDTH,

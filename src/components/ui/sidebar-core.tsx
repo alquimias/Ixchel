@@ -42,6 +42,9 @@ export const SIDEBAR_COOKIE_NAME = "sidebar_state";
 export const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 export const SIDEBAR_WIDTH = "16rem";
 export const SIDEBAR_WIDTH_MOBILE = "18rem";
+/** Collapsed icon-rail width. Sized so a `size-8` (32px) control plus the
+ *  group's `p-2` (8px a side) fills the column with no leftover gutter. */
+export const SIDEBAR_WIDTH_ICON = "3rem";
 /** Bare-key toggle defaults: "[" for a left sidebar, "]" for a right one.
  *  Bare (no ⌘/Ctrl) so the browser's history shortcuts stay untouched. */
 export const SIDEBAR_KEYBOARD_SHORTCUT = "[";
@@ -58,7 +61,7 @@ export const SIDEBAR_COLLAPSE_SLOP = 56;
 
 export type SidebarSide = "left" | "right";
 export type SidebarVariant = "sidebar" | "floating" | "inset";
-export type SidebarCollapsible = "offcanvas" | "none";
+export type SidebarCollapsible = "offcanvas" | "icon" | "none";
 
 export interface SidebarContextValue {
   state: "expanded" | "collapsed";
@@ -97,6 +100,10 @@ export interface SidebarContextValue {
    *  width spring so the panel tracks the pointer 1:1). */
   isResizing: boolean;
   setIsResizing: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Collapse mode of the rendered `<Sidebar/>` (registered by it). Defaults
+   *  to `"offcanvas"` until the sidebar mounts. `"icon"` keeps a 3rem rail
+   *  of glyphs instead of sliding the column away. */
+  collapsible: SidebarCollapsible;
 }
 
 // Mounted-provider registry for the global toggle shortcut. The listener has
@@ -114,6 +121,14 @@ export function useSidebar(): SidebarContextValue {
   const ctx = useContext(SidebarContext);
   if (!ctx) throw new Error("useSidebar must be used within a SidebarProvider");
   return ctx;
+}
+
+/** True on desktop while the sidebar is collapsed to the icon rail.
+ *  Offcanvas collapse and the mobile drawer never set this — labels stay
+ *  mounted so a peek overlay still shows a full menu. */
+export function useIconCollapsed(): boolean {
+  const { state, isMobile, collapsible } = useSidebar();
+  return collapsible === "icon" && state === "collapsed" && !isMobile;
 }
 
 // Starts undefined so the server and first client render agree (both treat it
@@ -351,6 +366,7 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
         cancelPeekTimer,
         isResizing,
         setIsResizing,
+        collapsible: "offcanvas",
       }),
       [
         open,
@@ -387,6 +403,7 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
             {
               "--sidebar-width": width,
               "--sidebar-width-mobile": widthMobile,
+              "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
               ...style,
             } as CSSProperties
           }
@@ -399,6 +416,24 @@ const SidebarProvider = forwardRef<HTMLDivElement, SidebarProviderProps>(
   }
 );
 SidebarProvider.displayName = "SidebarProvider";
+
+/** Overlay the rendered `<Sidebar/>`'s collapse mode onto the provider
+ *  context so menu rows can unmount labels on the icon rail without a
+ *  one-frame flash of offcanvas. */
+export function SidebarCollapsibleScope({
+  collapsible,
+  children,
+}: {
+  collapsible: SidebarCollapsible;
+  children: ReactNode;
+}) {
+  const ctx = useSidebar();
+  const value = useMemo(
+    () => (ctx.collapsible === collapsible ? ctx : { ...ctx, collapsible }),
+    [ctx, collapsible]
+  );
+  return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;
+}
 
 // ─── Slot helpers (render / asChild polymorphism) ────────────────────────────
 //
@@ -441,44 +476,73 @@ export function resolveSlotTemplate(
   return { template: null, content: children };
 }
 
+function mergeSlotProps(base: SlotProps, extra: SlotProps): SlotProps {
+  const merged: SlotProps = {
+    ...base,
+    ...extra,
+    className: cn(base.className, extra.className),
+    style: { ...base.style, ...extra.style },
+  };
+  for (const key of Object.keys(base)) {
+    if (!/^on[A-Z]/.test(key)) continue;
+    const ours = base[key];
+    const theirs = extra[key];
+    if (typeof ours === "function" && typeof theirs === "function") {
+      merged[key] = (...args: unknown[]) => {
+        (ours as (...a: unknown[]) => void)(...args);
+        (theirs as (...a: unknown[]) => void)(...args);
+      };
+    }
+  }
+  return merged;
+}
+
 /** Renders `children` into the template element (merging class/style/
  *  handlers, composing refs) or into the default tag when there is no
  *  template. A component rather than a helper the parts call during their
  *  render: the forwarded ref it composes arrives as the `elementRef` prop,
- *  and only lands on the element at commit. */
+ *  and only lands on the element at commit. Extra props (a tooltip trigger
+ *  cloning this node, for example) merge onto the DOM element. */
 export function SlotElement({
   template,
   defaultTag: DefaultTag,
   elementRef,
   props,
   children,
+  ...rest
 }: {
   template: ReactElement<SlotProps> | null;
   defaultTag: ElementType;
   elementRef?: Ref<HTMLElement>;
   props: SlotProps;
   children?: ReactNode;
-}): ReactElement {
+} & Record<string, unknown>): ReactElement {
+  const restRecord = rest as SlotProps & { ref?: Ref<HTMLElement> };
+  const restRef = restRecord.ref;
+  const { ref: _ignored, ...restProps } = restRecord;
+  const incoming = mergeSlotProps(props, restProps);
+  const composedHostRef = (node: HTMLElement | null) => {
+    assignRef(elementRef, node);
+    assignRef(restRef, node);
+  };
+
   if (!template) {
     const Tag = DefaultTag as ElementType;
     return (
-      <Tag {...props} ref={elementRef}>
+      <Tag {...incoming} ref={composedHostRef}>
         {children}
       </Tag>
     );
   }
   const TemplateTag = template.type as ElementType;
   const templateProps = template.props;
-  const merged: SlotProps = {
-    ...props,
-    ...templateProps,
-    className: cn(props.className, templateProps.className),
-    style: { ...props.style, ...(templateProps.style as CSSProperties | undefined) },
-  };
+  const merged = mergeSlotProps(incoming, templateProps);
   // Chain duplicated event handlers, template's first (it owns the element).
-  for (const key of Object.keys(props)) {
+  // mergeSlotProps already chains extra-after-base; re-chain so the template
+  // still fires first.
+  for (const key of Object.keys(incoming)) {
     if (!/^on[A-Z]/.test(key)) continue;
-    const ours = props[key];
+    const ours = incoming[key];
     const theirs = templateProps[key];
     if (typeof ours === "function" && typeof theirs === "function") {
       merged[key] = (...args: unknown[]) => {
@@ -492,7 +556,7 @@ export function SlotElement({
     (template as unknown as { ref?: Ref<HTMLElement> }).ref;
   // Both refs get the element, through a callback that only runs at commit.
   const composedRef = (node: HTMLElement | null) => {
-    assignRef(elementRef, node);
+    composedHostRef(node);
     assignRef(templateRef, node);
   };
   return (
@@ -540,6 +604,9 @@ export interface SidebarShellProps extends MotionSafeDivProps {
   variant: SidebarVariant;
   /** The `sidebar` variant's inner-edge border. Default true. */
   bordered?: boolean;
+  /** Desktop collapse. `"icon"` keeps a 3rem glyph rail; `"offcanvas"`
+   *  slides the column away (and can peek). */
+  collapsible?: Exclude<SidebarCollapsible, "none">;
   /** Render the built-in resize/collapse rail handle. `false` hides it and
    *  disables drag-resize — the trigger and keyboard shortcut still toggle. */
   rail?: boolean;
@@ -554,7 +621,7 @@ export interface SidebarShellProps extends MotionSafeDivProps {
  *  the whole sidebar works inside any bounded frame, not just the viewport.
  *  Ships the resize/collapse rail handle on its inner edge by default. */
 const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
-  ({ side, variant, bordered = true, rail = true, railTooltipOpen, className, children, ...props }, ref) => {
+  ({ side, variant, bordered = true, collapsible = "offcanvas", rail = true, railTooltipOpen, className, children, ...props }, ref) => {
     const {
       open,
       width,
@@ -577,7 +644,9 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
     // `!isResizing`: a drag can preview the collapsed state mid-gesture; the
     // shell must not swap to the peek strip then, or it would unmount the
     // rail holding the pointer capture and kill the drag.
-    const peekEnabled = peek !== "none" && !open && !isResizing;
+    // Icon collapse keeps a 3rem rail of glyphs — peek is the offcanvas
+    // overlay and would fight the rail if both ran.
+    const peekEnabled = peek !== "none" && !open && !isResizing && collapsible !== "icon";
     useEffect(() => {
       if (!(peekEnabled && isPeeking)) return;
       const onKeyDown = (event: KeyboardEvent) => {
@@ -672,7 +741,11 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
     // Below the drawer breakpoint the rail also gives its width back, on the
     // same exit tween as the CSS dissolve (slow.exit = 160ms), so the inset
     // slides into the space instead of snapping when display:none lands.
-    const shown = open && !isMobile;
+    const iconCollapsed = !open && collapsible === "icon" && !isMobile;
+    const railShown = (open || iconCollapsed) && !isMobile;
+    const outerWidth = open && !isMobile ? width : iconCollapsed ? SIDEBAR_WIDTH_ICON : "0rem";
+    const innerX = open || iconCollapsed ? "0%" : side === "left" ? "-100%" : "100%";
+    const innerWidth = iconCollapsed ? SIDEBAR_WIDTH_ICON : width;
     const widthTransition = reduceMotion
       ? { duration: 0 }
       : isResizing
@@ -681,7 +754,7 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
             ? spring.moderate
             : spring.moderate.exit
           : { duration: 0 }
-        : shown
+        : railShown
           ? spring.slow
           : spring.slow.exit;
 
@@ -694,14 +767,14 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
         }}
         data-slot="sidebar"
         data-state={open ? "expanded" : "collapsed"}
-        data-collapsible={open ? "" : "offcanvas"}
+        data-collapsible={open ? "" : collapsible}
         data-variant={variant}
         data-side={side}
         className={cn(
-          // No bare `group` here: an unnamed group on the whole rail would
+          // Named group only: an unnamed `group` on the whole rail would
           // fire every descendant's group-hover (Button fills, icon strokes)
-          // on rail hover. Named groups (menu-item etc.) handle row states.
-          "peer shrink-0 sticky top-0 h-svh",
+          // on rail hover. Named groups (sidebar, menu-item) handle row states.
+          "group/sidebar peer shrink-0 sticky top-0 h-svh",
           // While peek is armed the 0-width shell must not clip the edge
           // strip or the overlay card — and the shell must rise above the
           // inset (a later sibling) so the card paints over it. Pinning from
@@ -721,7 +794,7 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
           className
         )}
         initial={false}
-        animate={{ width: shown ? width : "0rem" }}
+        animate={{ width: outerWidth }}
         transition={widthTransition}
         // Hover-mode dismissal lives on the shell root: the pointer can land
         // on the overlay without ever crossing it (the card slides in under
@@ -820,9 +893,9 @@ const SidebarShell = forwardRef<HTMLDivElement, SidebarShellProps>(
             variant === "floating" && "p-2",
             variant === "inset" && "py-2"
           )}
-          style={{ width }}
+          style={iconCollapsed ? undefined : { width }}
           initial={false}
-          animate={{ x: open ? "0%" : side === "left" ? "-100%" : "100%" }}
+          animate={{ x: innerX, width: innerWidth }}
           transition={widthTransition}
         >
           {variant === "floating" ? (
@@ -1004,7 +1077,7 @@ export interface SidebarRailProps extends HTMLAttributes<HTMLButtonElement> {
  *  brightens the edge border. */
 const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
   ({ className, tooltipOpen, ...props }, ref) => {
-    const { toggleSidebar, setOpen, setWidth, side, setIsResizing } = useSidebar();
+    const { toggleSidebar, setOpen, setWidth, side, setIsResizing, open } = useSidebar();
     const shortcutKey = useShortcutKey();
     const railRef = useRef<HTMLButtonElement | null>(null);
     const dragRef = useRef<{ startX: number; startWidth: number; moved: boolean; collapsed: boolean } | null>(null);
@@ -1020,6 +1093,10 @@ const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(
     const onPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
       const drag = dragRef.current;
       if (!drag) return;
+      // Already collapsed (icon rail or offcanvas): click toggles, drag
+      // does not resize. A drag that STARTED open and previewed collapse
+      // (`drag.collapsed`) keeps tracking so pulling back can re-expand.
+      if (!open && !drag.collapsed) return;
       const dx = event.clientX - drag.startX;
       if (!drag.moved && Math.abs(dx) < 4) return;
       if (!drag.moved) {
@@ -1143,9 +1220,10 @@ const SidebarInset = forwardRef<HTMLElement, SidebarInsetProps>(
         className={cn(
           "relative flex min-h-0 w-full min-w-0 flex-1 flex-col bg-background",
           "peer-data-[variant=inset]:m-2 peer-data-[variant=inset]:peer-data-[side=left]:ml-0 peer-data-[variant=inset]:peer-data-[side=right]:mr-0",
-          // With the rail collapsed away, restore the sidebar-side margin so
-          // the card keeps symmetric insets.
-          "peer-data-[variant=inset]:peer-data-[state=collapsed]:peer-data-[side=left]:ml-2 peer-data-[variant=inset]:peer-data-[state=collapsed]:peer-data-[side=right]:mr-2",
+          // Offcanvas hides the rail: restore the sidebar-side margin so the
+          // card keeps symmetric insets. Icon mode leaves a 3rem rail — extra
+          // ml-2 would miss the status-bar tenant rule.
+          "peer-data-[variant=inset]:peer-data-[collapsible=offcanvas]:peer-data-[state=collapsed]:peer-data-[side=left]:ml-2 peer-data-[variant=inset]:peer-data-[collapsible=offcanvas]:peer-data-[state=collapsed]:peer-data-[side=right]:mr-2",
           "transition-[margin] duration-80",
           // Container radius follows the shape system (literal classes so
           // Tailwind's scanner emits both).
@@ -1203,7 +1281,11 @@ const SidebarHeader = forwardRef<HTMLDivElement, SidebarSectionProps>(
     <div
       ref={ref}
       data-sidebar="header"
-      className={cn("flex shrink-0 flex-col gap-2 p-2", className)}
+      className={cn(
+        "flex shrink-0 flex-col gap-2 p-2",
+        "group-data-[collapsible=icon]/sidebar:items-center",
+        className
+      )}
       {...props}
     />
   )
@@ -1215,7 +1297,11 @@ const SidebarFooter = forwardRef<HTMLDivElement, SidebarSectionProps>(
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn("mt-auto flex shrink-0 flex-col gap-2 p-2", className)}
+      className={cn(
+        "mt-auto flex shrink-0 flex-col gap-2 p-2",
+        "group-data-[collapsible=icon]/sidebar:items-center",
+        className
+      )}
       {...props}
     />
   )
@@ -1274,6 +1360,10 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
   ) => {
     const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
     const open = openProp ?? uncontrolledOpen;
+    const iconCollapsed = useIconCollapsed();
+    // Icon rail keeps every section's items visible — the group label is
+    // hidden, so a closed accordion would leave the glyphs unreachable.
+    const visuallyOpen = open || iconCollapsed;
     const contentId = useId();
     const toggle = useCallback(() => {
       const next = !(openProp ?? uncontrolledOpen);
@@ -1300,7 +1390,7 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
     // clipped box shaves the 2px focus ring off a group's first and last
     // rows — so clipping lifts once an open group has settled.
     const [settled, setSettled] = useState(open);
-    if (!open && settled) setSettled(false);
+    if (!visuallyOpen && settled) setSettled(false);
 
     // Height animates only when THIS group toggles. When the measured height
     // changes underneath it instead — a nested sub-menu collapsing inside the
@@ -1309,10 +1399,10 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
     // below the group along late. Tracked against the previous `open` so a
     // controlled `open` is covered too, and cleared once the toggle's
     // animation lands.
-    const [prevOpen, setPrevOpen] = useState(open);
+    const [prevOpen, setPrevOpen] = useState(visuallyOpen);
     const [toggling, setToggling] = useState(false);
-    if (prevOpen !== open) {
-      setPrevOpen(open);
+    if (prevOpen !== visuallyOpen) {
+      setPrevOpen(visuallyOpen);
       setToggling(true);
     }
 
@@ -1357,23 +1447,23 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
             </div>
             <motion.div
               id={contentId}
-              aria-hidden={open ? undefined : true}
+              aria-hidden={visuallyOpen ? undefined : true}
               className={cn(
-                open && settled ? "overflow-visible" : "overflow-hidden",
-                !measured && !open && "h-0"
+                visuallyOpen && settled ? "overflow-visible" : "overflow-hidden",
+                !measured && !visuallyOpen && "h-0"
               )}
               initial={false}
               animate={
                 measured
-                  ? { height: open ? contentHeight : 0, opacity: open ? 1 : 0 }
-                  : { opacity: open ? 1 : 0 }
+                  ? { height: visuallyOpen ? contentHeight : 0, opacity: visuallyOpen ? 1 : 0 }
+                  : { opacity: visuallyOpen ? 1 : 0 }
               }
               // Do NOT simplify this to `open ? spring.moderate : …`. The
               // toggling arm is what stops a re-measure from springing —
               // without it a nested collapse makes this wrapper chase its own
               // child and everything below the group moves late.
               transition={
-                toggling
+                toggling && !iconCollapsed
                   ? open
                     ? spring.moderate
                     : spring.moderate.exit
@@ -1381,7 +1471,7 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
               }
               onAnimationComplete={() => {
                 setToggling(false);
-                if (open) setSettled(true);
+                if (visuallyOpen) setSettled(true);
               }}
             >
               <div ref={contentRef} className="flex w-full min-w-0 flex-col">
@@ -1403,7 +1493,11 @@ const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>(
         ref={ref}
         data-sidebar="group"
         data-state={collapsible ? (open ? "open" : "closed") : undefined}
-        className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
+        className={cn(
+          "relative flex w-full min-w-0 flex-col p-2",
+          "group-data-[collapsible=icon]/sidebar:items-center",
+          className
+        )}
         {...props}
       >
         <SidebarGroupContext.Provider value={collapsible ? ctx : null}>
@@ -1428,6 +1522,7 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
     const shape = useShape();
     const icons = useIcons();
     const ChevronRightIcon = icons["chevron-right"];
+    const iconCollapsed = useIconCollapsed();
     const { template, content } = resolveSlotTemplate(render, asChild, children);
 
     // Truncate only the leading text; element children (count badges,
@@ -1477,11 +1572,13 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
               group.actionsCount > 0
                 ? ({ "--group-actions-pad": `${group.actionsCount * 28 + 6}px` } as CSSProperties)
                 : undefined,
+            hidden: iconCollapsed,
             className: cn(
               "flex h-8 w-full shrink-0 cursor-pointer select-none items-center gap-2 px-2 text-left text-muted-foreground outline-none",
               "transition-colors duration-80 hover:text-muted-foreground",
               group.actionsCount > 0 && "pr-[var(--group-actions-pad)]",
               "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)]",
+              "group-data-[collapsible=icon]/sidebar:hidden",
               shape.item,
               typeClass("caption", sizeVariant),
               className
@@ -1535,8 +1632,10 @@ const SidebarGroupLabel = forwardRef<HTMLDivElement, SidebarGroupLabelProps>(
         elementRef={ref as Ref<HTMLElement>}
         props={{
           "data-sidebar": "group-label",
+          hidden: iconCollapsed,
           className: cn(
             "flex h-8 shrink-0 items-center gap-2 px-2 text-muted-foreground outline-none",
+            "group-data-[collapsible=icon]/sidebar:hidden",
             typeClass("caption", sizeVariant),
             className
           ),
@@ -1564,8 +1663,11 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
     const shape = useShape();
     const sizeClasses = useSize();
     const inCluster = useContext(GroupActionsContext);
+    const iconCollapsed = useIconCollapsed();
     const { template, content } = resolveSlotTemplate(render, asChild, children);
-    return (
+    const tooltip = typeof props["aria-label"] === "string" ? props["aria-label"] : undefined;
+    const showIconTooltip = Boolean(tooltip) && iconCollapsed;
+    const button = (
       <SlotElement
         template={template}
         defaultTag="button"
@@ -1586,6 +1688,9 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
             // vary), thickening to 2 on hover — the same treatment Button's
             // icon-only span applies.
             "[&_svg]:size-[var(--icon-size)] [&_svg]:shrink-0 [&_svg]:stroke-[1.5] [&_svg]:transition-[stroke-width] [&_svg]:duration-80 hover:[&_svg]:stroke-[2]",
+            "group-data-[collapsible=icon]/sidebar:static group-data-[collapsible=icon]/sidebar:right-auto group-data-[collapsible=icon]/sidebar:top-auto",
+            "group-data-[collapsible=icon]/sidebar:size-8 group-data-[collapsible=icon]/sidebar:shrink-0",
+            "group-data-[collapsible=icon]/sidebar:[&_svg]:size-4",
             shape.item,
             className
           ),
@@ -1600,6 +1705,12 @@ const SidebarGroupAction = forwardRef<HTMLButtonElement, SidebarGroupActionProps
       >
         {content}
       </SlotElement>
+    );
+    if (!showIconTooltip) return button;
+    return (
+      <Tooltip content={tooltip} side="right">
+        {button}
+      </Tooltip>
     );
   }
 );
@@ -1621,6 +1732,7 @@ const SidebarGroupActions = forwardRef<HTMLDivElement, SidebarGroupActionsProps>
           // sidebar's inner edge — the rows' badge/action axis, so the header's
           // controls line up with the column below them.
           "absolute right-3.5 top-2 z-10 flex h-8 items-center gap-1",
+          "group-data-[collapsible=icon]/sidebar:static group-data-[collapsible=icon]/sidebar:right-auto group-data-[collapsible=icon]/sidebar:top-auto group-data-[collapsible=icon]/sidebar:h-auto group-data-[collapsible=icon]/sidebar:flex-col",
           className
         )}
         {...props}

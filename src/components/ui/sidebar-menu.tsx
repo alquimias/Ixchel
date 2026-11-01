@@ -12,6 +12,7 @@ import {
   useId,
   forwardRef,
   Children,
+  isValidElement,
   type ReactNode,
   type ReactElement,
   type CSSProperties,
@@ -31,8 +32,9 @@ import { useShape } from "../../lib/shape-context";
 import { useSize, SizeProvider, typeClass, type SizeVariant } from "../../lib/size-context";
 import { useFluidHover, type ItemRect } from "../../hooks/use-fluid-hover";
 import type { IconComponent } from "../../lib/icon-context";
-import { resolveSlotTemplate, SlotElement } from "./sidebar-core";
+import { resolveSlotTemplate, SlotElement, useIconCollapsed } from "./sidebar-core";
 import { FluidHoverHighlight } from "./fluid-hover-highlight";
+import { Tooltip } from "./tooltip";
 
 // SSR-safe layout effect (client components still server-render in Next).
 const useIsoLayoutEffect =
@@ -603,7 +605,11 @@ const SidebarMenu = forwardRef<HTMLUListElement, SidebarMenuProps>(
             else if (ref) (ref as React.MutableRefObject<HTMLUListElement | null>).current = node;
           }}
           data-sidebar="menu"
-          className={cn("relative flex w-full min-w-0 flex-col select-none", className)}
+          className={cn(
+            "relative flex w-full min-w-0 flex-col select-none",
+            "group-data-[collapsible=icon]/sidebar:items-center",
+            className
+          )}
           {...containerProps}
           {...props}
         >
@@ -795,7 +801,12 @@ const SidebarMenuItem = forwardRef<HTMLLIElement, SidebarMenuItemProps>(
         <li
           ref={refCb}
           data-sidebar="menu-item"
-          className={cn("group/menu-item relative", rowHeightClass(false, variant), className)}
+          className={cn(
+            "group/menu-item relative",
+            "group-data-[collapsible=icon]/sidebar:flex group-data-[collapsible=icon]/sidebar:flex-col group-data-[collapsible=icon]/sidebar:items-center",
+            rowHeightClass(false, variant),
+            className
+          )}
           {...props}
         >
           {children}
@@ -828,7 +839,12 @@ const SidebarMenuSubItem = forwardRef<HTMLLIElement, SidebarMenuSubItemProps>(
         <li
           ref={refCb}
           data-sidebar="menu-sub-item"
-          className={cn("group/menu-sub-item relative", rowHeightClass(true, variant), className)}
+          className={cn(
+            "group/menu-sub-item relative",
+            "group-data-[collapsible=icon]/sidebar:flex group-data-[collapsible=icon]/sidebar:justify-center",
+            rowHeightClass(true, variant),
+            className
+          )}
           {...props}
         >
           {children}
@@ -841,6 +857,24 @@ SidebarMenuSubItem.displayName = "SidebarMenuSubItem";
 
 // ─── Row label (ghost-span weight animation) ─────────────────────────────────
 
+function labelFromContent(content: ReactNode): string | undefined {
+  const nodes = Children.toArray(content);
+  const textParts: string[] = [];
+  for (const node of nodes) {
+    if (typeof node === "string" || typeof node === "number") textParts.push(String(node));
+    else break;
+  }
+  const joined = textParts.join("").trim();
+  if (joined) return joined;
+  for (const node of nodes) {
+    if (isValidElement(node)) {
+      const nested = labelFromContent((node.props as { children?: ReactNode }).children);
+      if (nested) return nested;
+    }
+  }
+  return undefined;
+}
+
 /** Splits leading string children out as the label so it can get the
  *  ghost-span weight treatment; remaining element children (dots, trailing
  *  icons) render as flex siblings after it — outside the text-box-trimmed
@@ -851,13 +885,24 @@ function MenuRowLabel({
   lit,
   emphasized,
   textClass,
+  omitCollapsedVisual = false,
 }: {
   content: ReactNode;
   lit: boolean;
   emphasized: boolean;
   textClass: string;
+  /** The row already has an `icon` prop — drop chevrons and extra copy. */
+  omitCollapsedVisual?: boolean;
 }) {
+  const iconCollapsed = useIconCollapsed();
   const nodes = Children.toArray(content);
+  if (iconCollapsed) {
+    if (omitCollapsedVisual) return null;
+    // Keep the leading graphic (logo, avatar, icon tile) and drop labels,
+    // chevrons and extra copy so the rail stays a single visual.
+    const visual = nodes.find((node) => isValidElement(node));
+    return visual ?? null;
+  }
   const textParts: string[] = [];
   let i = 0;
   while (i < nodes.length && (typeof nodes[i] === "string" || typeof nodes[i] === "number")) {
@@ -925,7 +970,7 @@ export const sidebarMenuButtonVariants = cva(
   // Disabled stays in the layout, and pointer events pass through it to the
   // row, since a browser sends no mouse events to a disabled button: the
   // container keeps seeing the moves, and fluid hover simply never lights it.
-  "peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 pl-2 text-left outline-none disabled:opacity-50 disabled:pointer-events-none transition-[padding] duration-80 pr-[var(--row-gutter)] group-hover/menu-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-item:pr-[var(--row-gutter-hover)] group-hover/menu-sub-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-sub-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:pr-[var(--row-gutter-hover)]",
+  "peer/menu-button relative z-10 flex w-full cursor-pointer select-none items-center gap-2 pl-2 text-left outline-none disabled:opacity-50 disabled:pointer-events-none transition-[padding] duration-80 pr-[var(--row-gutter)] group-hover/menu-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-item:pr-[var(--row-gutter-hover)] group-hover/menu-sub-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-sub-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:pr-[var(--row-gutter-hover)] group-data-[collapsible=icon]/sidebar:size-8 group-data-[collapsible=icon]/sidebar:w-8 group-data-[collapsible=icon]/sidebar:mx-auto group-data-[collapsible=icon]/sidebar:shrink-0 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:gap-0 group-data-[collapsible=icon]/sidebar:overflow-hidden group-data-[collapsible=icon]/sidebar:p-0 group-data-[collapsible=icon]/sidebar:px-0 group-data-[collapsible=icon]/sidebar:pr-0",
   {
     variants: {
       variant: {
@@ -943,6 +988,10 @@ export interface SidebarMenuButtonProps
   isActive?: boolean;
   size?: "default" | "sm" | "lg";
   icon?: IconComponent;
+  /** Color class applied to the icon when the row is not active/hovered. */
+  iconClassName?: string;
+  /** Shown as a tooltip on the icon rail. Falls back to the row's label. */
+  tooltip?: ReactNode;
   /** Semantic thread state for status-dot navigation. Drives the dot
    *  visuals (`active`/`unread` → filled, `idle` → ring), stamps
    *  `data-status` on the button, appends visually-hidden "unread" text for
@@ -963,12 +1012,14 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
       size = "default",
       variant,
       icon: Icon,
+      iconClassName,
       status,
       dot,
       render,
       asChild,
       className,
       children,
+      tooltip,
       ...props
     },
     ref
@@ -978,6 +1029,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
     const shape = useShape();
     const sizeClasses = useSize();
     const buttonRef = useRef<HTMLElement | null>(null);
+    const iconCollapsed = useIconCollapsed();
 
     // status="active" implies the row-active treatment; an explicit dot
     // overrides the status-derived one.
@@ -1001,7 +1053,7 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
       size === "sm"
         ? "h-7"
         : size === "lg"
-          ? "h-12"
+          ? "h-12 group-data-[collapsible=icon]/sidebar:size-8 group-data-[collapsible=icon]/sidebar:p-0"
           : sizeClasses.variant === "compact"
             ? "h-7"
             : "h-8";
@@ -1031,16 +1083,20 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
     } as CSSProperties;
 
     const { template, content } = resolveSlotTemplate(render, asChild, children);
+    const resolvedTooltip = tooltip ?? labelFromContent(content);
+    const showIconTooltip = Boolean(resolvedTooltip) && iconCollapsed;
 
     const inner = (
       <>
         {Icon && (
           <Icon
             size={sizeClasses.icon}
-            strokeWidth={lit ? 2 : 1.5}
+            strokeWidth={iconCollapsed || lit ? 2 : 1.5}
             className={cn(
               "shrink-0 transition-[color,stroke-width] duration-80",
-              lit ? "text-foreground" : "text-muted-foreground"
+              iconCollapsed || lit
+                ? "text-foreground"
+                : (iconClassName ?? "text-muted-foreground")
             )}
           />
         )}
@@ -1063,12 +1119,18 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
             />
           </span>
         )}
-        <MenuRowLabel content={content} lit={lit} emphasized={effectiveActive} textClass={textClass} />
+        <MenuRowLabel
+          content={content}
+          lit={lit}
+          emphasized={effectiveActive}
+          textClass={textClass}
+          omitCollapsedVisual={Boolean(Icon)}
+        />
         {status === "unread" && <span className="sr-only">, unread</span>}
       </>
     );
 
-    return (
+    const button = (
       <SlotElement
         template={template}
         defaultTag="button"
@@ -1084,6 +1146,9 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
           "data-active": effectiveActive ? "true" : undefined,
           "data-status": status,
           "aria-current": effectiveActive ? "page" : undefined,
+          ...(showIconTooltip && typeof resolvedTooltip === "string"
+            ? { "aria-label": resolvedTooltip }
+            : {}),
           tabIndex: tabIdx,
           className: cn(
             sidebarMenuButtonVariants({ variant }),
@@ -1097,6 +1162,13 @@ const SidebarMenuButton = forwardRef<HTMLButtonElement, SidebarMenuButtonProps>(
       >
         {inner}
       </SlotElement>
+    );
+
+    if (!showIconTooltip) return button;
+    return (
+      <Tooltip content={resolvedTooltip} side="right">
+        {button}
+      </Tooltip>
     );
   }
 );
@@ -1116,6 +1188,7 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
     const sizeClasses = useSize();
     const item = useContext(MenuItemContext);
     const inCluster = useContext(MenuActionsClusterContext);
+    const iconCollapsed = useIconCollapsed();
     const { template, content } = resolveSlotTemplate(render, asChild, children);
 
     // A lone action registers its own slot; inside a cluster the wrapper
@@ -1135,7 +1208,9 @@ const SidebarMenuAction = forwardRef<HTMLButtonElement, SidebarMenuActionProps>(
           type: template ? undefined : "button",
           "data-sidebar": "menu-action",
           "data-show-on-hover": showOnHover ? "" : undefined,
+          hidden: iconCollapsed,
           className: cn(
+            "group-data-[collapsible=icon]/sidebar:hidden",
             // right-1.5 centers the 24px hit-box on the same axis as the badge
             // (right-2 + min-w-5): both land 18px from the row's right edge.
             // With a badge on the same row the badge keeps that rightmost spot
@@ -1214,6 +1289,7 @@ const SidebarMenuActions = forwardRef<HTMLDivElement, SidebarMenuActionsProps>(
         data-sidebar="menu-actions"
         className={cn(
           "absolute right-1.5 z-10 flex items-center gap-1",
+          "group-data-[collapsible=icon]/sidebar:hidden",
           // The badge keeps the rightmost slot; the cluster sits left of it.
           item?.isSubRow
             ? "group-has-[>[data-sidebar=menu-badge]]/menu-sub-item:right-8.5"
@@ -1259,6 +1335,7 @@ const SidebarMenuBadge = forwardRef<HTMLDivElement, SidebarMenuBadgeProps>(
         data-sidebar="menu-badge"
         className={cn(
           "pointer-events-none absolute right-2 z-10 flex h-5 min-w-5 items-center justify-center px-1 tabular-nums",
+          "group-data-[collapsible=icon]/sidebar:hidden",
           BADGE_TOP,
           typeClass("micro", sizeClasses.variant),
           "transition-[color,font-variation-settings] duration-80",
@@ -1361,10 +1438,12 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
     // toggles. A height change coming from a nested sub collapsing inside it
     // snaps, so the wrapper tracks its content instead of chasing it with a
     // second spring and moving everything below late.
-    const [prevOpen, setPrevOpen] = useState(open);
+    const iconCollapsed = useIconCollapsed();
+    const visuallyOpen = open || iconCollapsed;
+    const [prevOpen, setPrevOpen] = useState(visuallyOpen);
     const [toggling, setToggling] = useState(false);
-    if (prevOpen !== open) {
-      setPrevOpen(open);
+    if (prevOpen !== visuallyOpen) {
+      setPrevOpen(visuallyOpen);
       setToggling(true);
     }
 
@@ -1375,18 +1454,22 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
         // animate prop that appears later in the element's life. Until the
         // content is measured, a closed sub collapses via the h-0 class and
         // an open one keeps its natural height.
-        className={cn("overflow-hidden", !measured && !open && "h-0")}
+        className={cn(
+          "overflow-hidden",
+          "group-data-[collapsible=icon]/sidebar:w-full",
+          !measured && !visuallyOpen && "h-0"
+        )}
         initial={false}
         animate={
           measured
-            ? { height: open ? contentHeight : 0, opacity: open ? 1 : 0 }
-            : { opacity: open ? 1 : 0 }
+            ? { height: visuallyOpen ? contentHeight : 0, opacity: visuallyOpen ? 1 : 0 }
+            : { opacity: visuallyOpen ? 1 : 0 }
         }
         // Do NOT simplify this to `open ? spring.moderate : …` — see the
         // toggling note above. Springing on a re-measure stacks a second
         // spring on a nested sub's own collapse.
         transition={
-          toggling
+          toggling && !iconCollapsed
             ? open
               ? spring.moderate
               : spring.moderate.exit
@@ -1403,14 +1486,16 @@ const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
             else if (ref) (ref as React.MutableRefObject<HTMLUListElement | null>).current = node;
           }}
           data-sidebar="menu-sub"
-          data-state={open ? "open" : "closed"}
-          aria-hidden={open ? undefined : true}
+          data-state={visuallyOpen ? "open" : "closed"}
+          aria-hidden={visuallyOpen ? undefined : true}
           className={cn(
             // ml-[15px] (a margin, not a translate, so the rows' measured
             // rects include it) + 1px border + pl-2 lands the sub-row label
             // (+ the row's own pl-2 = 32px) exactly on the parent label's x
             // (px-2 + 16px icon + gap-2 = 32px).
             "relative ml-[15px] flex min-w-0 flex-col border-l border-border pl-2 select-none",
+            "group-data-[collapsible=icon]/sidebar:ml-0 group-data-[collapsible=icon]/sidebar:border-l-0 group-data-[collapsible=icon]/sidebar:px-0 group-data-[collapsible=icon]/sidebar:items-center",
+            iconCollapsed && "ml-0 border-l-0 px-0 items-center",
             className
           )}
           {...props}
@@ -1431,14 +1516,18 @@ export interface SidebarMenuSubButtonProps extends AnchorHTMLAttributes<HTMLAnch
   icon?: IconComponent;
   render?: ReactElement;
   asChild?: boolean;
+  tooltip?: ReactNode;
 }
 
+const ICON_RAIL_SUB_ICON_PX = 14;
+
 const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonProps>(
-  ({ isActive = false, size = "md", icon: Icon, render, asChild, className, children, ...props }, ref) => {
+  ({ isActive = false, size = "md", icon: Icon, render, asChild, className, children, tooltip, ...props }, ref) => {
     const item = useContext(MenuItemContext);
     const shape = useShape();
     const sizeClasses = useSize();
     const buttonRef = useRef<HTMLElement | null>(null);
+    const iconCollapsed = useIconCollapsed();
 
     const setActive = item?.setActive;
     useIsoLayoutEffect(() => {
@@ -1465,8 +1554,10 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
     } as CSSProperties;
 
     const { template, content } = resolveSlotTemplate(render, asChild, children);
+    const resolvedTooltip = tooltip ?? labelFromContent(content);
+    const showIconTooltip = Boolean(resolvedTooltip) && iconCollapsed;
 
-    return (
+    const button = (
       <SlotElement
         template={template}
         defaultTag="a"
@@ -1480,11 +1571,15 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
           "data-size": size,
           "data-active": isActive ? "true" : undefined,
           "aria-current": isActive ? "page" : undefined,
+          ...(showIconTooltip && typeof resolvedTooltip === "string"
+            ? { "aria-label": resolvedTooltip }
+            : {}),
           tabIndex: tabIdx,
           className: cn(
             "relative z-10 flex w-full cursor-pointer select-none items-center gap-2 pl-2 text-left outline-none",
             "transition-[padding] duration-80 pr-[var(--row-gutter)] group-hover/menu-sub-item:pr-[var(--row-gutter-hover)] group-focus-within/menu-sub-item:pr-[var(--row-gutter-hover)] group-has-[[data-sidebar=menu-action]:is([data-state=open],[data-popup-open],[aria-expanded=true])]/menu-sub-item:pr-[var(--row-gutter-hover)]",
             size === "sm" ? "h-6" : sizeClasses.variant === "compact" ? "h-6" : "h-7",
+            "group-data-[collapsible=icon]/sidebar:size-6 group-data-[collapsible=icon]/sidebar:w-6 group-data-[collapsible=icon]/sidebar:mx-auto group-data-[collapsible=icon]/sidebar:shrink-0 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:gap-0 group-data-[collapsible=icon]/sidebar:overflow-hidden group-data-[collapsible=icon]/sidebar:p-0 group-data-[collapsible=icon]/sidebar:px-0 group-data-[collapsible=icon]/sidebar:pr-0 group-data-[collapsible=icon]/sidebar:[&_svg]:size-3.5",
             shape.item,
             className
           ),
@@ -1495,8 +1590,8 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
         <>
           {Icon && (
             <Icon
-              size={sizeClasses.icon}
-              strokeWidth={lit ? 2 : 1.5}
+              size={iconCollapsed ? ICON_RAIL_SUB_ICON_PX : sizeClasses.icon}
+              strokeWidth={iconCollapsed ? 1.5 : lit ? 2 : 1.5}
               className={cn(
                 "shrink-0 transition-[color,stroke-width] duration-80",
                 lit ? "text-foreground" : "text-muted-foreground"
@@ -1504,15 +1599,24 @@ const SidebarMenuSubButton = forwardRef<HTMLAnchorElement, SidebarMenuSubButtonP
             />
           )}
           {/* Sub-rows keep the parent rows' type size — only the row height
-              steps down. */}
+              steps down. In icon mode the label unmounts and the glyph shrinks
+              below the parent rail icon. */}
           <MenuRowLabel
             content={content}
             lit={lit}
             emphasized={isActive}
             textClass={size === "sm" ? typeClass("body", "compact") : sizeClasses.text}
+            omitCollapsedVisual={Boolean(Icon)}
           />
         </>
       </SlotElement>
+    );
+
+    if (!showIconTooltip) return button;
+    return (
+      <Tooltip content={resolvedTooltip} side="right">
+        {button}
+      </Tooltip>
     );
   }
 );

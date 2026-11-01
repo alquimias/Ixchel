@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
-import { ArrowRight, Lock, Mail } from 'lucide-react';
+import { ArrowRight, Lock, Mail, User } from 'lucide-react';
 import { AuthLoadingState } from '../shared/PageTransitionLoader';
 import { EmptyState } from '../shared/EmptyState';
 import { Button } from '../ui/button';
@@ -16,11 +16,28 @@ export type LoginScreenAuthenticated = {
   actionTo: string;
 };
 
+/** What the first field collects. Default `'email'` keeps the BYTE/ERP contract. */
+export type LoginIdentifierKind = 'email' | 'username';
+
+export type LoginScreenSubmitValues = {
+  /**
+   * Identifier value. When `identifier="username"` this is the username, kept
+   * under `email` so existing `onSubmit` handlers stay source-compatible.
+   */
+  email: string;
+  password: string;
+};
+
 export type LoginScreenProps = {
   brand?: LoginBrand;
   showPassword?: boolean;
+  /**
+   * First-field mode. `'email'` (default) validates an address; `'username'`
+   * accepts a non-empty name (e.g. cerebro `users.name`).
+   */
+  identifier?: LoginIdentifierKind;
   submitAriaLabel?: string;
-  onSubmit: (values: { email: string; password: string }) => void | Promise<void>;
+  onSubmit: (values: LoginScreenSubmitValues) => void | Promise<void>;
   pending?: { title: string; description: string } | null;
   authenticated?: LoginScreenAuthenticated | null;
   updates?: LoginChangelogUpdate[];
@@ -40,9 +57,16 @@ function validateLoginEmail(value: string): string | undefined {
   return undefined;
 }
 
+function validateLoginUsername(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return 'Ingresa tu usuario';
+  return undefined;
+}
+
 export function LoginScreen({
   brand,
   showPassword = false,
+  identifier = 'email',
   submitAriaLabel,
   onSubmit,
   pending = null,
@@ -58,6 +82,9 @@ export function LoginScreen({
   const [emailError, setEmailError] = useState<string | undefined>();
   const [passwordError, setPasswordError] = useState<string | undefined>();
   const [submitting, setSubmitting] = useState(false);
+  const isUsername = identifier === 'username';
+  const identifierLabel = isUsername ? 'Usuario' : 'Correo electrónico';
+  const identifierPlaceholder = isUsername ? 'nombre de usuario' : 'usuario@empresa.com';
 
   const busy =
     pending ??
@@ -72,7 +99,7 @@ export function LoginScreen({
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const nextEmailError = validateLoginEmail(email);
+    const nextEmailError = isUsername ? validateLoginUsername(email) : validateLoginEmail(email);
     if (nextEmailError) {
       setEmailError(nextEmailError);
       return;
@@ -119,9 +146,9 @@ export function LoginScreen({
           <InputGroup className="gap-4">
             <InputField
               id="login-username"
-              label="Correo electrónico"
-              icon={Mail}
-              type="email"
+              label={identifierLabel}
+              icon={isUsername ? User : Mail}
+              type={isUsername ? 'text' : 'email'}
               borderless
               value={email}
               onChange={(value) => {
@@ -129,7 +156,7 @@ export function LoginScreen({
                 if (emailError) setEmailError(undefined);
               }}
               error={emailError}
-              placeholder="usuario@empresa.com"
+              placeholder={identifierPlaceholder}
               autoComplete="username"
             />
             {showPassword ? (

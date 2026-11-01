@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { LoginScreen } from './LoginScreen';
 
@@ -46,5 +46,22 @@ describe('LoginScreen', () => {
     expect(
       screen.getByRole('link', { name: '¿Olvidaste tu contraseña?' }),
     ).toHaveAttribute('href', '/recuperar-contrasena');
+  });
+
+  it('en modo username muestra el campo de usuario y envía el nombre en email', async () => {
+    const onSubmit = vi.fn();
+    render(<LoginScreen showPassword identifier="username" onSubmit={onSubmit} />);
+
+    const user = screen.getByLabelText('Usuario');
+    expect(user).toHaveAttribute('type', 'text');
+    expect(screen.queryByLabelText('Correo electrónico')).toBeNull();
+
+    fireEvent.change(user, { target: { value: 'jose' } });
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'secret' } });
+    fireEvent.submit(user.closest('form')!);
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({ email: 'jose', password: 'secret' });
+    });
   });
 });

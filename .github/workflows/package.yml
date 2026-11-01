@@ -1,9 +1,8 @@
-# Crea y publica @alquimias/erp-ui en GitHub Packages sin pasar por
-# el CI del monorepo. El manifiesto del repo sigue llamándose @erp/ui
-# y private: GitHub Packages solo acepta el scope de la organización,
-# así que este job renombra el paquete en el runner antes de publicar.
-# En main publica 0.0.1-sha<12>. Un tag v* publica esa versión y abre
-# un GitHub Release con el .tgz.
+# Publica @alquimias/erp-ui. El manifiesto del repo sigue llamándose @erp/ui
+# (el workspace del ERP lo consume así); el job renombra a @alquimias/erp-ui
+# en el runner. Un tag v* publica esa versión; un push a main publica
+# 0.0.1-sha<12>. Destinos: npmjs.org (público, necesita NPM_TOKEN) y
+# GitHub Packages (el ERP que ya lo consume ahí).
 name: Package
 
 on:
@@ -38,7 +37,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          registry-url: https://npm.pkg.github.com
+          registry-url: https://registry.npmjs.org
           scope: '@alquimias'
 
       - name: Install dependencies
@@ -62,8 +61,10 @@ jobs:
             version="0.0.1-sha${GITHUB_SHA::12}"
           fi
           echo "version=${version}" >> "$GITHUB_ENV"
-          npm pkg set name='@alquimias/erp-ui' version="$version"
+          npm pkg set name='@alquimias/erp-ui' version="$version" license=MIT
           npm pkg delete private
+          npm pkg set publishConfig.access=public
+          npm pkg delete publishConfig.registry || true
 
       - name: Empaquetar
         run: pnpm pack --pack-destination "$RUNNER_TEMP/package"
@@ -76,6 +77,26 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Publicar en npmjs.org
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM_TOKEN no configurado; se omite npmjs.org"
+            exit 0
+          fi
+          tarball="$(find "$RUNNER_TEMP/package" -name '*.tgz' -print -quit)"
+          if [[ "$GITHUB_REF" != refs/tags/v* ]] && npm view "@alquimias/erp-ui@${version}" version >/dev/null 2>&1; then
+            echo "Ya publicada en npmjs: @alquimias/erp-ui@${version}"
+            exit 0
+          fi
+          publish_args=(--access public --registry https://registry.npmjs.org)
+          if [[ "$version" == *-* ]]; then
+            publish_args+=(--tag dev)
+          fi
+          npm publish "$tarball" "${publish_args[@]}"
+
       - name: Publicar en GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -83,10 +104,10 @@ jobs:
           set -euo pipefail
           tarball="$(find "$RUNNER_TEMP/package" -name '*.tgz' -print -quit)"
           if [[ "$GITHUB_REF" != refs/tags/v* ]] && npm view "@alquimias/erp-ui@${version}" version --registry https://npm.pkg.github.com >/dev/null 2>&1; then
-            echo "Ya publicada: @alquimias/erp-ui@${version}"
+            echo "Ya publicada en GitHub Packages: @alquimias/erp-ui@${version}"
             exit 0
           fi
-          publish_args=(--access restricted --registry https://npm.pkg.github.com)
+          publish_args=(--access public --registry https://npm.pkg.github.com)
           if [[ "$version" == *-* ]]; then
             publish_args+=(--tag dev)
           fi

@@ -15,6 +15,12 @@ type Story = StoryObj<typeof meta>;
 
 export const Password: Story = {};
 
+export const Username: Story = {
+  args: {
+    identifier: 'username',
+  },
+};
+
 export const WithFormFooter: Story = {
   args: {
     formFooter: <a href="/recuperar-contrasena">¿Olvidaste tu contraseña?</a>,

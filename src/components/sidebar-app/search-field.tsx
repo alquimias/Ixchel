@@ -27,7 +27,7 @@ export function SidebarSearchField({
   const icons = useIcons();
   const SearchIcon = icons.search;
   return (
-    <div className="group/search relative">
+    <div className="group/search relative group-data-[collapsible=icon]/sidebar:hidden">
       <SearchIcon
         size={iconSize}
         strokeWidth={1.5}

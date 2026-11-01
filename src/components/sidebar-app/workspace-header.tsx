@@ -7,6 +7,7 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
   useSidebar,
+  useIconCollapsed,
 } from "../ui/sidebar";
 import {
   DropdownMenu,
@@ -57,15 +58,21 @@ export function SidebarWorkspaceHeader({
   const icons = useIcons();
   const ChevronDown = icons["chevron-down"];
   const { isPeeking } = useSidebar();
+  const iconCollapsed = useIconCollapsed();
 
   // The tile sits absolutely in the row's leading slot — 20px at left-1.5
-  // centres it on the rows' 16px leading icon axis.
+  // centres it on the rows' 16px leading icon axis. On the icon rail it
+  // becomes the only visual, so it flows in the button instead of overlaying.
   const tileSlot = (
     <span
       aria-hidden
-      className={`pointer-events-none absolute left-1.5 top-1/2 -translate-y-1/2 transition-opacity duration-80 ${
-        isPeeking ? "opacity-0" : "opacity-100"
-      }`}
+      className={
+        iconCollapsed
+          ? "flex shrink-0"
+          : `pointer-events-none absolute left-1.5 top-1/2 -translate-y-1/2 transition-opacity duration-80 ${
+              isPeeking ? "opacity-0" : "opacity-100"
+            }`
+      }
     >
       {tile}
     </span>
@@ -91,15 +98,22 @@ export function SidebarWorkspaceHeader({
     // Not interactive, so it renders outside SidebarMenu — a menu row would
     // track the traveling hover background.
     return (
-      <div className="relative flex h-8 items-center pl-8 pr-2">
-        <SidebarTrigger
-          size="icon-compact"
-          aria-hidden={!isPeeking || undefined}
-          tabIndex={isPeeking ? undefined : -1}
-          className={`absolute left-1 top-1/2 -translate-y-1/2 ${triggerFade}`}
-        />
+      <div
+        className={cn(
+          "relative flex h-8 items-center",
+          iconCollapsed ? "justify-center px-0" : "pl-8 pr-2"
+        )}
+      >
+        {iconCollapsed ? null : (
+          <SidebarTrigger
+            size="icon-compact"
+            aria-hidden={!isPeeking || undefined}
+            tabIndex={isPeeking ? undefined : -1}
+            className={`absolute left-1 top-1/2 -translate-y-1/2 ${triggerFade}`}
+          />
+        )}
         {tileSlot}
-        {nameSpan}
+        {iconCollapsed ? null : nameSpan}
       </div>
     );
   }
@@ -109,16 +123,22 @@ export function SidebarWorkspaceHeader({
     // or a mid-drag width) — the text keeps whatever room is left.
     <SidebarMenu aria-label="Workspace" className="@container">
       <SidebarMenuItem>
-        <SidebarTrigger
-          size="icon-compact"
-          aria-hidden={!isPeeking || undefined}
-          tabIndex={isPeeking ? undefined : -1}
-          className={`absolute left-1 top-1/2 z-20 -translate-y-1/2 ${triggerFade}`}
-        />
+        {iconCollapsed ? null : (
+          <SidebarTrigger
+            size="icon-compact"
+            aria-hidden={!isPeeking || undefined}
+            tabIndex={isPeeking ? undefined : -1}
+            className={`absolute left-1 top-1/2 z-20 -translate-y-1/2 ${triggerFade}`}
+          />
+        )}
         <DropdownMenu>
           <DropdownTrigger
             render={
-              <SidebarMenuButton aria-label="Switch workspace" className="pl-8">
+              <SidebarMenuButton
+                aria-label="Switch workspace"
+                className={iconCollapsed ? undefined : "pl-8"}
+                tooltip={name}
+              >
                 {tileSlot}
                 {nameSpan}
                 <span className="ml-auto inline-flex @max-[7rem]:hidden">

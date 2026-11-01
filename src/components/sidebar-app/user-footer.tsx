@@ -53,7 +53,7 @@ export function SidebarUserFooter({
         <DropdownMenu>
           <DropdownTrigger
             render={
-              <SidebarMenuButton aria-label="Open user menu">
+              <SidebarMenuButton aria-label="Open user menu" tooltip={name}>
                 <span className="-ml-0.5 -mr-0.5 flex size-5 shrink-0 items-center justify-center">
                   {avatar}
                 </span>

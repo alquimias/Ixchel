@@ -203,7 +203,7 @@ export function LoginScreen({
 
   return (
     <div
-      className="flex h-[calc(100svh-var(--app-status-bar-height,0px))] max-h-[calc(100svh-var(--app-status-bar-height,0px))] w-full flex-col overflow-hidden bg-[#F3F3F5] dark:bg-background"
+      className="flex h-[calc(100svh-var(--app-status-bar-height,0px))] max-h-[calc(100svh-var(--app-status-bar-height,0px))] w-full flex-col overflow-hidden bg-muted dark:bg-background"
       style={{
         ...style,
         fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
@@ -221,15 +221,9 @@ export function LoginScreen({
         </div>
 
         <div className="hidden min-h-0 flex-1 flex-col overflow-hidden lg:flex lg:w-[56%]">
-          <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden border border-border bg-gradient-to-br from-white via-brand-ghost to-[#F0F1FA] p-6 text-foreground shadow-xl md:p-8 lg:border-l-0 lg:p-10 dark:border-transparent dark:bg-[#0C0D0F] dark:from-[#0C0D0F] dark:via-[#0C0D0F] dark:to-[#0C0D0F] dark:text-white dark:shadow-2xl">
+          <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden border border-border bg-gradient-to-br from-card via-brand-ghost to-accent p-6 text-foreground shadow-xl md:p-8 lg:border-l-0 lg:p-10 dark:border-transparent dark:bg-card dark:from-card dark:via-card dark:to-card dark:text-white dark:shadow-2xl">
             <div className="pointer-events-none absolute -top-10 -right-10 size-[500px] bg-gradient-to-br from-brand-soft/35 via-brand-peri/15 to-transparent opacity-70 dark:hidden" />
-            <div
-              className="pointer-events-none absolute -top-10 -right-10 hidden size-[500px] opacity-30 dark:block"
-              style={{
-                backgroundImage:
-                  'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(147,149,211,0.2) 20%, transparent 60%)',
-              }}
-            />
+            <div className="pointer-events-none absolute -top-10 -right-10 hidden size-[500px] bg-gradient-to-br from-brand-ghost/40 via-brand-soft/20 to-transparent opacity-30 dark:block" />
             <div className="pointer-events-none absolute top-0 right-0 size-80 rounded-full bg-brand-soft/15 blur-3xl dark:bg-white/[0.04]" />
 
             <div className="relative z-10 flex min-h-0 flex-1 flex-col">

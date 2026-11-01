@@ -22,7 +22,7 @@ function ChangelogArticle({ update }: { update: LoginChangelogUpdate }) {
   return (
     <article ref={articleRef} id={articleId} className="relative pb-12 last:pb-2">
       <div
-        className="absolute top-1.5 size-1.5 rounded-full bg-brand-soft ring-[3px] ring-brand-ghost dark:ring-[#0C0D0F]"
+        className="absolute top-1.5 size-1.5 rounded-full bg-brand-soft ring-[3px] ring-brand-ghost dark:ring-card"
         style={{ left: TIMELINE_LEFT, transform: 'translateX(-50%)' }}
         aria-hidden
       />

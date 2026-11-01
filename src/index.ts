@@ -68,6 +68,7 @@ export * from './hooks/use-input-error-shake';
 export * from './hooks/use-mobile';
 export * from './hooks/use-proximity-hover';
 export * from './hooks/use-touch-primary';
+export * from './lib/color-theme';
 export * from './lib/dotmatrix-core';
 export * from './lib/dotmatrix-hooks';
 export * from './lib/elevated';

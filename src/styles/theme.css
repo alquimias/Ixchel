@@ -11,6 +11,19 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Paleta pública de Ixchel. `@theme` (no inline) emite estas cinco
+   variables en :root y las utilities (`bg-brand-soft`, …) apuntan a
+   `var(--color-brand-*)`, así un consumidor las redefine en CSS o con
+   `ColorThemeProvider` y todo el tema derivado se actualiza. BYTE es el
+   default; no es un lock de la librería. */
+@theme {
+  --color-brand-black: #000807;
+  --color-brand-lavender: #A2A3BB;
+  --color-brand-soft: #9395D3;
+  --color-brand-peri: #B3B7EE;
+  --color-brand-ghost: #FBF9FF;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-display:
@@ -31,11 +44,6 @@
     'Segoe UI',
     Roboto,
     sans-serif;
-  --color-brand-black: #000807;
-  --color-brand-lavender: #A2A3BB;
-  --color-brand-soft: #9395D3;
-  --color-brand-peri: #B3B7EE;
-  --color-brand-ghost: #FBF9FF;
   /* Paleta de avatares (D-Avatar): 7 tonos derivados de las 5 variables de
      marca vía color-mix(), mismo criterio que --chart-1..5. Mode-invariant
      a propósito -- igual que NIVEL_BADGE_STYLES, la identidad de color de
@@ -149,20 +157,21 @@
   }
 }
 
-:root {
+:root,
+[data-ixchel-color-theme] {
   --background: var(--color-brand-ghost);
   --foreground: var(--color-brand-black);
-  --card: #ffffff;
+  --card: color-mix(in oklab, var(--color-brand-ghost) 12%, white);
   --card-foreground: var(--color-brand-black);
-  --popover: #ffffff;
+  --popover: var(--card);
   --popover-foreground: var(--color-brand-black);
   --primary: var(--color-brand-soft);
   --primary-foreground: var(--color-brand-ghost);
   --secondary: var(--color-brand-peri);
   --secondary-foreground: var(--color-brand-black);
-  --muted: #f3f2fa;
-  --muted-foreground: #5c5d6e;
-  --accent: #f0f1fa;
+  --muted: color-mix(in oklab, var(--color-brand-ghost) 86%, var(--color-brand-lavender) 14%);
+  --muted-foreground: color-mix(in oklab, var(--color-brand-lavender) 62%, var(--color-brand-black) 38%);
+  --accent: color-mix(in oklab, var(--color-brand-ghost) 82%, var(--color-brand-peri) 18%);
   --accent-foreground: var(--color-brand-soft);
   /* D-02 (UI-02): los semanticos ya no son los hex literales de Bootstrap 5
      (#dc3545/#198754/#ffc107/#0dcaf0) — se mezclan con la paleta de marca
@@ -173,7 +182,7 @@
      generico sin relacion con la marca. */
   --destructive: color-mix(in oklab, #dc3545 88%, var(--color-brand-soft) 12%);
   --destructive-light: color-mix(in oklab, var(--destructive) 18%, transparent);
-  --border: #e2e3ed;
+  --border: color-mix(in oklab, var(--color-brand-ghost) 70%, var(--color-brand-lavender) 30%);
   /* D-Input: el borde de campos editables necesita más peso que el borde
      "estructural" de tarjetas/tablas (--border) para que un input se lea
      como editable de un vistazo, no solo por el placeholder gris. 85%
@@ -208,22 +217,22 @@
   --chart-4: color-mix(in oklab, var(--color-brand-soft) 45%, var(--color-brand-black) 55%);
   --chart-5: color-mix(in oklab, var(--color-brand-lavender) 40%, var(--color-brand-black) 60%);
   --radius: 0.625rem;
-  --sidebar: #ffffff;
+  --sidebar: var(--card);
   --sidebar-foreground: var(--color-brand-black);
   --sidebar-primary: var(--color-brand-soft);
   --sidebar-primary-foreground: var(--color-brand-ghost);
-  --sidebar-accent: #f0f1fa;
+  --sidebar-accent: var(--accent);
   --sidebar-accent-foreground: var(--color-brand-soft);
-  --sidebar-border: #e2e3ed;
+  --sidebar-border: var(--border);
   --sidebar-ring: var(--color-brand-soft);
-  --surface-1: #FAFAFA;
-  --surface-2: #FCFCFC;
-  --surface-3: #FFFFFF;
-  --surface-4: #FFFFFF;
-  --surface-5: #FFFFFF;
-  --surface-6: #FFFFFF;
-  --surface-7: #FFFFFF;
-  --surface-8: #FFFFFF;
+  --surface-1: color-mix(in oklab, var(--color-brand-ghost) 55%, white);
+  --surface-2: color-mix(in oklab, var(--color-brand-ghost) 35%, white);
+  --surface-3: var(--card);
+  --surface-4: var(--card);
+  --surface-5: var(--card);
+  --surface-6: var(--card);
+  --surface-7: var(--card);
+  --surface-8: var(--card);
   /* D-05 (UI-05): sombra tenida con brand-black en vez de negro neutro. */
   --shadow-color: color-mix(in srgb, var(--color-brand-black) 6%, transparent);
   --shadow-1: 0 0 0 1px var(--shadow-color);
@@ -263,20 +272,21 @@
   --lh-micro-compact: 12px;
 }
 
-.dark {
+.dark,
+.dark [data-ixchel-color-theme] {
   --background: var(--color-brand-black);
   --foreground: var(--color-brand-ghost);
-  --card: #0b0e14;
+  --card: color-mix(in oklab, var(--color-brand-black) 88%, var(--color-brand-ghost) 12%);
   --card-foreground: var(--color-brand-ghost);
-  --popover: #0b0e14;
+  --popover: var(--card);
   --popover-foreground: var(--color-brand-ghost);
   --primary: var(--color-brand-soft);
   --primary-foreground: var(--color-brand-black);
-  --secondary: #1a1c24;
+  --secondary: color-mix(in oklab, var(--color-brand-black) 82%, var(--color-brand-lavender) 18%);
   --secondary-foreground: var(--color-brand-ghost);
-  --muted: #1a1c24;
+  --muted: var(--secondary);
   --muted-foreground: var(--color-brand-lavender);
-  --accent: #1e1f2b;
+  --accent: color-mix(in oklab, var(--color-brand-black) 78%, var(--color-brand-peri) 22%);
   --accent-foreground: var(--color-brand-peri);
   /* Mismo criterio de D-02 (UI-02) para dark: se retiñe el oklch generico
      anterior con brand-soft en vez de reemplazarlo por otro valor
@@ -309,23 +319,23 @@
   --chart-3: var(--color-brand-lavender);
   --chart-4: color-mix(in oklab, var(--color-brand-lavender) 60%, var(--color-brand-ghost) 40%);
   --chart-5: var(--color-brand-ghost);
-  --sidebar: #0b0e14;
+  --sidebar: var(--card);
   --sidebar-foreground: var(--color-brand-ghost);
   --sidebar-primary: var(--color-brand-soft);
   --sidebar-primary-foreground: var(--color-brand-black);
-  --sidebar-accent: #1e1f2b;
+  --sidebar-accent: var(--accent);
   --sidebar-accent-foreground: var(--color-brand-peri);
   --sidebar-border: color-mix(in srgb, var(--color-brand-lavender) 15%, transparent);
   --sidebar-ring: var(--color-brand-soft);
-  /* Jerarquía de superficies alineada a la paleta ERP (no grises genéricos). */
-  --surface-1: #000807;
-  --surface-2: #000807;
-  --surface-3: #0b0e14;
-  --surface-4: #0b0e14;
-  --surface-5: #1a1c24;
-  --surface-6: #1e1f2b;
-  --surface-7: #1e1f2b;
-  --surface-8: #252525;
+  /* Jerarquía de superficies derivada de la paleta (no grises genéricos). */
+  --surface-1: var(--color-brand-black);
+  --surface-2: var(--color-brand-black);
+  --surface-3: var(--card);
+  --surface-4: var(--card);
+  --surface-5: var(--secondary);
+  --surface-6: var(--accent);
+  --surface-7: var(--accent);
+  --surface-8: color-mix(in oklab, var(--color-brand-black) 72%, var(--color-brand-ghost) 28%);
   --dm-hi-base: rgba(255,255,255,0.01);
   --dm-hi-mid: rgba(255,255,255,0.02);
   --dm-hi-high: rgba(255,255,255,0.04);
